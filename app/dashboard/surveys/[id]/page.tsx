@@ -125,6 +125,14 @@ function SurveyFlow() {
                 </ReactFlow>
             </div>
 
+            <div className="absolute top-4 right-4 z-50 flex gap-2">
+                <button className="px-4 py-2 bg-white text-sm font-medium border border-border rounded-md shadow-sm hover:bg-muted transition-colors">
+                    Save Draft
+                </button>
+                <button className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md shadow-md hover:bg-primary/90 transition-colors">
+                    Publish
+                </button>
+            </div>
             {/* Right Sidebar: Properties Panel */}
             {selectedNodeId && nodes.find(n => n.id === selectedNodeId) && (
                 <PropertiesPanel
