@@ -88,7 +88,7 @@ export default function LoginForm() {
           <BottomGradient />
         </button>
 
-        <div className="my-8 h-[1px] w-full bg-gradient-to-r from-transparent via-border to-transparent" />
+        <div className="my-8 h-1 w-full bg-linear-gradient-to-r from-transparent via-border to-transparent" />
       </form>
     </div>
   );
@@ -99,8 +99,8 @@ export default function LoginForm() {
 const BottomGradient = () => {
   return (
     <>
-      <span className="absolute inset-x-0 -bottom-px block h-px w-full bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-0 transition duration-500 group-hover/btn:opacity-100" />
-      <span className="absolute inset-x-10 -bottom-px mx-auto block h-px w-1/2 bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-0 blur-sm transition duration-500 group-hover/btn:opacity-100" />
+      <span className="absolute inset-x-0 -bottom-px block h-px w-full bg-liner-to-r from-transparent via-cyan-500 to-transparent opacity-0 transition duration-500 group-hover/btn:opacity-100" />
+      <span className="absolute inset-x-10 -bottom-px mx-auto block h-px w-1/2 bg-liner-to-r from-transparent via-indigo-500 to-transparent opacity-0 blur-sm transition duration-500 group-hover/btn:opacity-100" />
     </>
   );
 };

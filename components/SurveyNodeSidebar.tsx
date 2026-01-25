@@ -202,7 +202,7 @@ export default function SurveyNodeSidebar() {
             {/* Render Tooltip via Portal/Fixed Overlay */}
             {hoveredItem && (
                 <div
-                    className="fixed z-[9999] w-48 p-2 bg-popover text-popover-foreground text-xs rounded-md shadow-lg border border-border pointer-events-none animate-in fade-in zoom-in-95 duration-150"
+                    className="fixed z-9999 w-48 p-2 bg-popover text-popover-foreground text-xs rounded-md shadow-lg border border-border pointer-events-none animate-in fade-in zoom-in-95 duration-150"
                     style={{
                         top: hoveredItem.y,
                         left: hoveredItem.x

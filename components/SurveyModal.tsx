@@ -126,7 +126,7 @@ export default function NewSurveyModal({ isOpen, onClose, onSuccess }: NewSurvey
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="flex-[2] flex cursor-pointer items-center justify-center gap-2 bg-primary text-primary-foreground font-bold py-4 rounded-xl hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 shadow-sm"
+                                    className="flex-2 flex cursor-pointer items-center justify-center gap-2 bg-primary text-primary-foreground font-bold py-4 rounded-xl hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 shadow-sm"
                                 >
                                     {loading ? (
                                         <div className="h-5 w-5  border-2 border-primary-foreground/20 border-t-primary-foreground rounded-full animate-spin" />
