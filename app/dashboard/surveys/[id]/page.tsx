@@ -26,14 +26,23 @@ import {
     useReactFlow,
     type ReactFlowInstance
 } from '@xyflow/react';
+import { nodeTypes } from '@/components/nodes';
 import SurveyNodeSidebar from '@/components/SurveyNodeSidebar';
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
 
 function SurveyFlow() {
-    const [nodes, setNodes] = useState<ReactFlowNode[]>(initialNodes);
-    const [edges, setEdges] = useState<ReactFlowEdge[]>(initialEdges);
+    // Initial nodes for testing
+    const [nodes, setNodes] = useState<ReactFlowNode[]>([
+        {
+            id: '1',
+            type: 'textInput',
+            position: { x: 250, y: 5 },
+            data: { label: 'Customer Name', question: 'What is your full name?' }
+        }
+    ]);
+    const [edges, setEdges] = useState<ReactFlowEdge[]>([]);
     // Use undefined as initial state for the instance
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | undefined>(undefined);
     const { screenToFlowPosition } = useReactFlow();
@@ -85,17 +94,19 @@ function SurveyFlow() {
     );
 
     return (
-        <div className="flex w-full h-full bg-background">
+        <div className="flex w-full h-screen bg-background">
+            <SurveyNodeSidebar />
             <div className="flex-1 h-full relative" onDragOver={onDragOver} onDrop={onDrop}>
                 <ReactFlow
                     nodes={nodes}
                     edges={edges}
+                    nodeTypes={nodeTypes}
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnect}
                     onInit={setReactFlowInstance}
                     fitView
-                    className="bg-muted/10"
+                    className="bg-muted/10 px-10"
                 >
                     <Background />
                     <Controls />

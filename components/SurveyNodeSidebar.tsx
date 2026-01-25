@@ -24,47 +24,18 @@ import {
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 
-// Node Categories and Types
-const nodeCategories = [
-    {
-        id: "input",
-        label: "Input Fields",
-        icon: IconForms,
-        items: [
-            { type: "textInput", label: "Text Answer", icon: IconTextCaption, description: "Capture short or long text responses" },
-            { type: "numberInput", label: "Number", icon: IconNumbers, description: "Input for numerical values" },
-            { type: "emailInput", label: "Email", icon: IconMail, description: "Validate email addresses" },
-            { type: "dateInput", label: "Date Picker", icon: IconCalendar, description: "Select dates from a calendar" },
-        ]
-    },
-    {
-        id: "choice",
-        label: "Choices",
-        icon: IconListCheck,
-        items: [
-            { type: "singleChoice", label: "Single Choice", icon: IconListDetails, description: "Select one option from a list" },
-            { type: "multipleChoice", label: "Multiple Choice", icon: IconCheckbox, description: "Select multiple options" },
-            { type: "rating", label: "Rating", icon: IconStar, description: "Star or number rating scale" },
-        ]
-    },
-    {
-        id: "logic",
-        label: "Logic",
-        icon: IconGitBranch,
-        items: [
-            { type: "branch", label: "Branch", icon: IconArrowMerge, description: "Split flow based on conditions" },
-            { type: "end", label: "End Screen", icon: IconForbid, description: "Terminate the survey flow" },
-        ]
-    },
-    {
-        id: "media",
-        label: "Media",
-        icon: IconPhoto,
-        items: [
-            { type: "image", label: "Image", icon: IconPhoto, description: "Display an image or banner" },
-        ]
-    }
-];
+import { NODE_DEFINITIONS, CATEGORY_CONFIG, NodeCategory } from "@/components/nodes/definitions";
+
+// Dynamically group nodes by category
+const nodeCategories = Object.keys(CATEGORY_CONFIG).map((catKey) => {
+    const category = catKey as NodeCategory;
+    return {
+        id: category,
+        label: CATEGORY_CONFIG[category].label,
+        icon: CATEGORY_CONFIG[category].icon,
+        items: NODE_DEFINITIONS.filter(node => node.category === category)
+    };
+}).filter(cat => cat.items.length > 0);
 
 export default function SurveyNodeSidebar() {
     const [isCollapsed, setIsCollapsed] = useState(false);
