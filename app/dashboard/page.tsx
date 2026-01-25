@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { surveyApi, Survey } from "@/api/survey";
 import { toast } from "sonner";
 import { IconPlus, IconLogout, IconClipboardList, IconChevronRight } from "@tabler/icons-react";
-import NewSurveyModal from "@/components/NewSurveyModal";
+import NewSurveyModal from "@/components/SurveyModal";
 import { motion, AnimatePresence } from "motion/react";
 
 export default function Dashboard() {

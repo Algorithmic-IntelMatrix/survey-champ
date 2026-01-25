@@ -103,7 +103,7 @@ export default function NewSurveyModal({ isOpen, onClose, onSuccess }: NewSurvey
 
                             <div className="space-y-2">
                                 <label htmlFor="description" className="text-sm font-medium text-muted-foreground ml-1">
-                                    Description (Optional)
+                                    Description
                                 </label>
                                 <textarea
                                     id="description"
