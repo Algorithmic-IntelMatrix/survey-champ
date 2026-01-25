@@ -27,7 +27,7 @@ export default function LoginForm() {
       localStorage.setItem("user", JSON.stringify(response.user));
 
       // Redirect to home or dashboard
-      router.push("/");
+      router.push("/dashboard");
     } catch (err: any) {
       console.error("Login failed:", err);
       const message = err.response?.data?.message || "Something went wrong. Please try again.";
