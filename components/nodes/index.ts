@@ -4,8 +4,11 @@ import MediaNode from './MediaNode';
 import ChoiceNode from './ChoiceNode';
 import { StartNode, EndNode } from './StructuralNodes';
 import RatingNode from './RatingNode';
+import RankingNode from './RankingNode';
 import SliderNode from './SliderNode';
 import BranchNode from './BranchNode';
+import ConsentNode from './ConsentNode';
+import MultiInputNode from './MultiInputNode';
 import { NODE_DEFINITIONS } from './definitions';
 
 // Map of Component Implementations
@@ -19,6 +22,9 @@ const componentMap: Record<string, React.ComponentType<any>> = {
     multipleChoice: ChoiceNode,
     rating: RatingNode,
     slider: SliderNode,
+    ranking: RankingNode,
+    consent: ConsentNode,
+    multiInput: MultiInputNode,
     
     image: MediaNode,
     video: MediaNode, 

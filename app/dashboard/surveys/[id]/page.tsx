@@ -15,12 +15,6 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-const initialNodes: ReactFlowNode[] = [
-    { id: 'n1', position: { x: 0, y: 0 }, data: { label: 'Node 1' } },
-    { id: 'n2', position: { x: 0, y: 100 }, data: { label: 'Node 2' } },
-];
-const initialEdges: ReactFlowEdge[] = [{ id: 'n1-n2', source: 'n1', target: 'n2' }];
-
 import {
     ReactFlowProvider,
     useReactFlow,
@@ -38,10 +32,10 @@ function SurveyFlow() {
     // Initial nodes for testing
     const [nodes, setNodes] = useState<ReactFlowNode[]>([
         {
-            id: '1',
-            type: 'textInput',
-            position: { x: 250, y: 5 },
-            data: getNodeInitialData('textInput')
+            id: 'start-1',
+            type: 'start',
+            position: { x: 250, y: 50 },
+            data: getNodeInitialData('start')
         }
     ]);
     const [edges, setEdges] = useState<ReactFlowEdge[]>([]);
@@ -123,7 +117,7 @@ function SurveyFlow() {
                     onInit={setReactFlowInstance}
                     onNodeClick={onNodeClick}
                     onPaneClick={onPaneClick}
-                    fitView
+                    defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
                     className="bg-muted/10 px-10"
                 >
                     <Background />
@@ -135,6 +129,7 @@ function SurveyFlow() {
             {selectedNodeId && nodes.find(n => n.id === selectedNodeId) && (
                 <PropertiesPanel
                     node={nodes.find(n => n.id === selectedNodeId) || null}
+                    nodes={nodes} // Pass full nodes list for logic building
                     onChange={(fieldName, value) => {
                         setNodes(nds => nds.map(n => {
                             if (n.id === selectedNodeId) {

@@ -1,18 +1,18 @@
-"use client";
-
 import React from "react";
 import { useReactFlow, Node } from "@xyflow/react";
 import { getNodeDefinition, PropertyField } from "@/components/nodes/definitions";
 import { IconX } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
+import { ConditionBuilder } from "./ConditionBuilder";
 
 interface PropertiesPanelProps {
     node: Node | null;
+    nodes: Node[]; // Full list of nodes needed for logic builder
     onChange: (fieldName: string, value: any) => void;
     onClose: () => void;
 }
 
-export default function PropertiesPanel({ node, onChange, onClose }: PropertiesPanelProps) {
+export default function PropertiesPanel({ node, nodes, onChange, onClose }: PropertiesPanelProps) {
 
     // Get the definition for this node type
     const definition = node ? getNodeDefinition(node.type || "") : null;
@@ -49,6 +49,7 @@ export default function PropertiesPanel({ node, onChange, onClose }: PropertiesP
                             field={field}
                             value={node.data[field.name] ?? field.defaultValue}
                             onChange={(val) => onChange(field.name, val)}
+                            nodes={nodes}
                         />
 
                         {field.helperText && (
@@ -67,8 +68,17 @@ export default function PropertiesPanel({ node, onChange, onClose }: PropertiesP
     );
 }
 
-function FieldRenderer({ field, value, onChange }: { field: PropertyField, value: any, onChange: (val: any) => void }) {
+
+function FieldRenderer({ field, value, onChange, nodes }: { field: PropertyField, value: any, onChange: (val: any) => void, nodes: Node[] }) {
     switch (field.type) {
+        case 'condition':
+            return (
+                <ConditionBuilder
+                    value={value || { field: '', operator: 'equals', value: '' }}
+                    onChange={onChange}
+                    nodes={nodes}
+                />
+            );
         case 'text':
             return (
                 <input

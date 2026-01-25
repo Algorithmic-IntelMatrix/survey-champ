@@ -12,10 +12,11 @@ interface TextInputData extends BaseNodeData {
     // I will just remove the redeclaration to inherit from BaseNodeData.
     description?: string;
     required?: boolean;
+    longAnswer?: boolean;
 }
 
 const TextInputNode = (props: NodeProps<any>) => {
-    const { label, placeholder, description, required } = props.data;
+    const { label, placeholder, description, required, longAnswer } = props.data;
 
     return (
         <BaseNode
@@ -36,12 +37,18 @@ const TextInputNode = (props: NodeProps<any>) => {
                     )}
                 </div>
 
-                <input
-                    type="text"
-                    readOnly
-                    className="w-full bg-transparent border-b border-border py-1 text-sm font-medium focus:outline-hidden focus:border-primary transition-colors placeholder:text-muted-foreground/50 cursor-default"
-                    placeholder={placeholder || "User's answer..."}
-                />
+                {longAnswer ? (
+                    <div className="w-full bg-transparent border border-border rounded-md p-2 text-sm font-medium min-h-[60px] text-muted-foreground/50">
+                        {placeholder || "Long textual answer..."}
+                    </div>
+                ) : (
+                    <input
+                        type="text"
+                        readOnly
+                        className="w-full bg-transparent border-b border-border py-1 text-sm font-medium focus:outline-hidden focus:border-primary transition-colors placeholder:text-muted-foreground/50 cursor-default"
+                        placeholder={placeholder || "Short answer..."}
+                    />
+                )}
             </div>
         </BaseNode>
     );

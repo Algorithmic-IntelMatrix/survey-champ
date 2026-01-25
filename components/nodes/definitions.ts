@@ -1,7 +1,7 @@
-import { IconTextCaption, IconNumbers, IconMail, IconCalendar, IconListDetails, IconCheckbox, IconStar, IconArrowMerge, IconForbid, IconPhoto, IconForms, IconListCheck, IconGitBranch } from '@tabler/icons-react';
+import { IconTextCaption, IconNumbers, IconMail, IconCalendar, IconListDetails, IconCheckbox, IconStar, IconArrowMerge, IconForbid, IconPhoto, IconForms, IconListCheck, IconGitBranch, IconListNumbers } from '@tabler/icons-react';
 
 export type NodeCategory = 'input' | 'choice' | 'logic' | 'media' | 'flow';
-export type PropertyType = 'text' | 'textarea' | 'number' | 'switch' | 'select' | 'color' | 'options';
+export type PropertyType = 'text' | 'textarea' | 'number' | 'switch' | 'select' | 'color' | 'options' | 'condition';
 
 export interface PropertyField {
     name: string;
@@ -44,14 +44,40 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
     { 
         type: 'textInput', 
         label: 'Text Answer', 
-        description: 'Capture short or long text responses', 
+        description: 'Capture text responses', 
         icon: IconTextCaption, 
         category: 'input',
         properties: [
             ...commonProperties,
-            { name: 'placeholder', label: 'Placeholder', type: 'text', placeholder: 'e.g., Type here...', defaultValue: '' }
+            { name: 'placeholder', label: 'Placeholder', type: 'text', placeholder: 'e.g., Type here...', defaultValue: '' },
+            { name: 'longAnswer', label: 'Long Answer (Multi-line)', type: 'switch', defaultValue: false }
         ]
     },
+    {
+        type: 'multiInput',
+        label: 'Multi-Input',
+        description: 'Multiple fields in one screen',
+        icon: IconForms,
+        category: 'input',
+        properties: [
+            ...commonProperties,
+            // We'll treat this as a list of fields where each has a label. 
+            // For MVP, we'll use the 'options' type but renaming it conceptually in the UI or strict new type.
+            // Let's create a specific property type for this to include more meta data if needed later.
+            { 
+                name: 'fields', 
+                label: 'Input Fields', 
+                type: 'options', // Re-using options for now: label = Field Label, value = Field Type (text, email, number) 
+                defaultValue: [
+                    { label: 'First Name', value: 'text' }, 
+                    { label: 'Last Name', value: 'text' }
+                ],
+                helperText: 'Value column represents input type (text, number, email)'
+            }
+        ]
+    },
+
+    // ... (Number, Email, Date stay same)
     { 
         type: 'numberInput', 
         label: 'Number', 
@@ -90,7 +116,33 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
         category: 'choice',
         properties: [
             ...commonProperties,
-            { name: 'options', label: 'Options', type: 'options', defaultValue: [{ label: 'Option 1', value: 'opt1' }, { label: 'Option 2', value: 'opt2' }] }
+            { name: 'options', label: 'Options', type: 'options', defaultValue: [{ label: 'Option 1', value: 'opt1' }, { label: 'Option 2', value: 'opt2' }] },
+            { name: 'allowOther', label: 'Allow "Other" Option', type: 'switch', defaultValue: false },
+            { name: 'otherLabel', label: '"Other" Placeholder', type: 'text', defaultValue: 'Other (Please specify)', helperText: 'Label for the open-ended option' }
+        ]
+    },
+    { 
+        type: 'ranking',
+        label: 'Ranking',
+        description: 'Rank options in order',
+        icon: IconListNumbers,
+        category: 'choice',
+        properties: [
+            ...commonProperties,
+            { name: 'options', label: 'Items to Rank', type: 'options', defaultValue: [{ label: 'Item A', value: 'a' }, { label: 'Item B', value: 'b' }, { label: 'Item C', value: 'c' }] }
+        ]
+    },
+    { 
+        type: 'consent',
+        label: 'Consent',
+        description: 'Terms and agreement checkbox',
+        icon: IconCheckbox,
+        category: 'choice',
+        properties: [
+            { name: 'label', label: 'Title', type: 'text', defaultValue: 'Terms of Service' },
+            { name: 'description', label: 'Terms Text', type: 'textarea', defaultValue: 'I agree to the terms and conditions...' },
+            { name: 'checkboxLabel', label: 'Checkbox Label', type: 'text', defaultValue: 'I agree' },
+            { name: 'required', label: 'Required', type: 'switch', defaultValue: true }
         ]
     },
     { 
@@ -101,7 +153,9 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
         category: 'choice',
         properties: [
             ...commonProperties,
-            { name: 'options', label: 'Options', type: 'options', defaultValue: [{ label: 'Option 1', value: 'opt1' }, { label: 'Option 2', value: 'opt2' }] }
+            { name: 'options', label: 'Options', type: 'options', defaultValue: [{ label: 'Option 1', value: 'opt1' }, { label: 'Option 2', value: 'opt2' }] },
+            { name: 'allowOther', label: 'Allow "Other" Option', type: 'switch', defaultValue: false },
+            { name: 'otherLabel', label: '"Other" Placeholder', type: 'text', defaultValue: 'Other (Please specify)' }
         ]
     },
     { 
@@ -147,7 +201,7 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
         icon: IconArrowMerge, 
         category: 'logic',
         properties: [
-            { name: 'condition', label: 'Condition', type: 'text', placeholder: 'e.g. age > 18' }
+            { name: 'condition', label: 'Logic Rule', type: 'condition', defaultValue: { logicType: 'AND', rules: [] } }
         ]
     },
     { 

@@ -4,7 +4,7 @@ import BaseNode from './BaseNode';
 import { IconListDetails, IconCheckbox } from '@tabler/icons-react';
 
 const ChoiceNode = (props: NodeProps<any>) => {
-    const { label, description, required, options } = props.data;
+    const { label, description, required, options, otherLabel } = props.data;
     const isMultiple = props.type === 'multipleChoice';
 
     return (
@@ -34,7 +34,16 @@ const ChoiceNode = (props: NodeProps<any>) => {
                             <span>{opt.label || `Option ${i + 1}`}</span>
                         </div>
                     ))}
-                    {(!options || options.length === 0) && (
+
+                    {props.data.allowOther && (
+                        <div className="flex items-center gap-2 p-2 rounded-md border border-border border-dashed bg-background/30 text-xs text-muted-foreground">
+                            <div className={`w-3 h-3 border border-muted-foreground ${isMultiple ? 'rounded-sm' : 'rounded-full'}`} />
+                            <span className="italic">{props.data.otherLabel || "Other"}:</span>
+                            <div className="flex-1 border-b border-muted-foreground/30 h-4"></div>
+                        </div>
+                    )}
+
+                    {(!options || options.length === 0) && !props.data.allowOther && (
                         <div className="text-xs text-muted-foreground italic">No options added</div>
                     )}
                 </div>
