@@ -109,7 +109,7 @@ function SurveyFlow() {
     );
 
     return (
-        <div className="flex w-full h-full bg-background overflow-hidden">
+        <div className="flex w-full h-screen bg-background overflow-hidden">
             <SurveyNodeSidebar />
 
             <div className="flex-1 h-full relative border-r border-border" onDragOver={onDragOver} onDrop={onDrop}>

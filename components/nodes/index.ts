@@ -3,23 +3,30 @@ import TextInputNode from './TextInputNode';
 import MediaNode from './MediaNode';
 import ChoiceNode from './ChoiceNode';
 import { StartNode, EndNode } from './StructuralNodes';
+import RatingNode from './RatingNode';
+import SliderNode from './SliderNode';
+import BranchNode from './BranchNode';
 import { NODE_DEFINITIONS } from './definitions';
 
 // Map of Component Implementations
 const componentMap: Record<string, React.ComponentType<any>> = {
     textInput: TextInputNode,
-    numberInput: TextInputNode, // Reuse Text for Number for now (or make separate)
-    emailInput: TextInputNode,  // Reuse Text for Email
-    dateInput: TextInputNode,   // Reuse Text for Date
+    numberInput: TextInputNode, 
+    emailInput: TextInputNode,
+    dateInput: TextInputNode,
     
     singleChoice: ChoiceNode,
     multipleChoice: ChoiceNode,
+    rating: RatingNode,
+    slider: SliderNode,
     
     image: MediaNode,
+    video: MediaNode, 
+    audio: MediaNode, 
     
     start: StartNode,
     end: EndNode,
-    // Branch node to be implemented
+    branch: BranchNode
 };
 
 export const nodeTypes: NodeTypes = componentMap;

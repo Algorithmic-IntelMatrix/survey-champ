@@ -36,48 +36,50 @@ const BaseNode = ({ id, selected, data, children, icon: Icon, color = "bg-primar
 
     return (
         <div className={cn(
-            "group relative w-[280px] rounded-xl border-2 bg-card shadow-sm transition-all duration-200",
+            "group relative w-[220px] rounded-xl border-2 bg-card shadow-sm transition-all duration-200",
             selected ? "border-primary ring-4 ring-primary/10 shadow-xl" : "border-border hover:border-sidebar-primary/50"
         )}>
-            {/* Target Handle (Input) */}
+            {/* Target Handle (Input) - TOP */}
             {handles?.target && (
                 <Handle
                     type="target"
                     position={handles.target}
-                    className="w-3 h-3 bg-muted-foreground border-2 border-background"
+                    className="w-3 h-3 !bg-muted-foreground border-2 border-background"
+                    style={{ top: -6, left: '50%', transform: 'translateX(-50%)' }}
                 />
             )}
 
             {/* Header / Drag Handle */}
-            <div className="drag-handle flex items-center justify-between p-3 border-b border-border/50 bg-muted/30 rounded-t-[10px] cursor-grab active:cursor-grabbing">
+            <div className="drag-handle flex items-center justify-between p-2 border-b border-border/50 bg-muted/30 rounded-t-[10px] cursor-grab active:cursor-grabbing">
                 <div className="flex items-center gap-2">
-                    <div className={cn("p-1.5 rounded-md text-primary-foreground", color)}>
-                        {Icon && <Icon size={14} />}
+                    <div className={cn("p-1 rounded-md text-primary-foreground", color)}>
+                        {Icon && <Icon size={12} />}
                     </div>
-                    <span className="font-semibold text-sm text-foreground tracking-tight">{data.label}</span>
+                    <span className="font-semibold text-xs text-foreground tracking-tight truncate max-w-[120px]">{data.label}</span>
                 </div>
 
                 {/* Actions (Visible on hover/selected) */}
-                <div className={cn("flex items-center gap-1 transition-opacity", selected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
+                <div className={cn("flex items-center gap-0.5 transition-opacity", selected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
                     {/* Duplicate implementation would go here */}
-                    <button onClick={handleDelete} className="p-1 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors" title="Delete">
-                        <IconTrash size={14} />
+                    <button onClick={handleDelete} className="p-0.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors" title="Delete">
+                        <IconTrash size={12} />
                     </button>
-                    <IconGripVertical size={14} className="text-muted-foreground/50 ml-1" />
+                    <IconGripVertical size={12} className="text-muted-foreground/50 ml-0.5" />
                 </div>
             </div>
 
             {/* Content Body */}
-            <div className="p-4">
+            <div className="p-3">
                 {children}
             </div>
 
-            {/* Source Handle (Output) */}
+            {/* Source Handle (Output) - BOTTOM */}
             {handles?.source && (
                 <Handle
                     type="source"
                     position={handles.source}
-                    className="w-3 h-3 bg-primary border-2 border-background"
+                    className="w-3 h-3 !bg-primary border-2 border-background"
+                    style={{ bottom: -6, left: '50%', transform: 'translateX(-50%)' }}
                 />
             )}
         </div>

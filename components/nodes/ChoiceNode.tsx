@@ -14,7 +14,7 @@ const ChoiceNode = (props: NodeProps<any>) => {
             data={props.data}
             icon={isMultiple ? IconCheckbox : IconListDetails}
             color="bg-orange-500"
-            handles={{ source: Position.Right, target: Position.Left }}
+            handles={{ source: Position.Bottom, target: Position.Top }}
         >
             <div className="space-y-3">
                 <div className="space-y-1">

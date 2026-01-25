@@ -13,7 +13,7 @@ const MediaNode = (props: NodeProps<any>) => {
             data={props.data}
             icon={IconPhoto}
             color="bg-indigo-500"
-            handles={{ source: Position.Right, target: Position.Left }}
+            handles={{ source: Position.Bottom, target: Position.Top }}
         >
             <div className="aspect-video w-full bg-muted rounded-md overflow-hidden flex items-center justify-center border border-border">
                 {url ? (

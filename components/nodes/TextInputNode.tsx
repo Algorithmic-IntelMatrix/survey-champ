@@ -23,7 +23,7 @@ const TextInputNode = (props: NodeProps<any>) => {
             selected={props.selected}
             data={props.data}
             icon={IconTextCaption}
-            handles={{ source: Position.Right, target: Position.Left }}
+            handles={{ source: Position.Bottom, target: Position.Top }}
         >
             <div className="space-y-3">
                 <div className="space-y-1">

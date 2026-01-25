@@ -1,6 +1,6 @@
 import { IconTextCaption, IconNumbers, IconMail, IconCalendar, IconListDetails, IconCheckbox, IconStar, IconArrowMerge, IconForbid, IconPhoto, IconForms, IconListCheck, IconGitBranch } from '@tabler/icons-react';
 
-export type NodeCategory = 'input' | 'choice' | 'logic' | 'media';
+export type NodeCategory = 'input' | 'choice' | 'logic' | 'media' | 'flow';
 export type PropertyType = 'text' | 'textarea' | 'number' | 'switch' | 'select' | 'color' | 'options';
 
 export interface PropertyField {
@@ -28,7 +28,8 @@ export const CATEGORY_CONFIG: Record<NodeCategory, { label: string, icon: React.
     input: { label: 'Input Fields', icon: IconForms },
     choice: { label: 'Choices', icon: IconListCheck },
     logic: { label: 'Logic', icon: IconGitBranch },
-    media: { label: 'Media', icon: IconPhoto }
+    media: { label: 'Media', icon: IconPhoto },
+    flow: { label: 'Flow', icon: IconArrowMerge } // New category for Start/End
 };
 
 // Common properties used across multiple nodes
@@ -89,7 +90,7 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
         category: 'choice',
         properties: [
             ...commonProperties,
-            { name: 'options', label: 'Options', type: 'options', defaultValue: [{ label: 'Option 1', value: 'option1' }, { label: 'Option 2', value: 'option2' }] }
+            { name: 'options', label: 'Options', type: 'options', defaultValue: [{ label: 'Option 1', value: 'opt1' }, { label: 'Option 2', value: 'opt2' }] }
         ]
     },
     { 
@@ -100,19 +101,42 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
         category: 'choice',
         properties: [
             ...commonProperties,
-            { name: 'options', label: 'Options', type: 'options', defaultValue: [{ label: 'Option 1', value: 'option1' }, { label: 'Option 2', value: 'option2' }] }
+            { name: 'options', label: 'Options', type: 'options', defaultValue: [{ label: 'Option 1', value: 'opt1' }, { label: 'Option 2', value: 'opt2' }] }
         ]
     },
     { 
         type: 'rating', 
         label: 'Rating', 
-        description: 'Star or number rating scale', 
+        description: 'Star rating scale', 
         icon: IconStar, 
         category: 'choice',
         properties: [
             ...commonProperties,
-            { name: 'maxRating', label: 'Max Rating', type: 'number', defaultValue: 5 }
+            { name: 'maxRating', label: 'Max Stars', type: 'number', defaultValue: 5 }
         ]
+    },
+    {
+        type: 'slider',
+        label: 'Slider',
+        description: 'Select a value from a range',
+        icon: IconNumbers,
+        category: 'choice',
+        properties: [
+            ...commonProperties,
+            { name: 'min', label: 'Minimum', type: 'number', defaultValue: 0 },
+            { name: 'max', label: 'Maximum', type: 'number', defaultValue: 100 },
+            { name: 'step', label: 'Step', type: 'number', defaultValue: 1 }
+        ]
+    },
+
+    // Flow
+    {
+        type: 'start',
+        label: 'Start',
+        description: 'Entry point of the survey',
+        icon: IconArrowMerge, // IconPlayerPlay
+        category: 'flow',
+        properties: [] // No properties for Start usually
     },
 
     // Logic
@@ -131,7 +155,7 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
         label: 'End Screen', 
         description: 'Terminate the survey flow', 
         icon: IconForbid, 
-        category: 'logic',
+        category: 'flow',
         properties: [
             { name: 'message', label: 'Thank You Message', type: 'textarea', defaultValue: 'Thank you for completing the survey!' }
         ]
@@ -141,12 +165,34 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
     { 
         type: 'image', 
         label: 'Image', 
-        description: 'Display an image or banner', 
+        description: 'Display an image', 
         icon: IconPhoto, 
         category: 'media',
         properties: [
             { name: 'url', label: 'Image URL', type: 'text', placeholder: 'https://...' },
             { name: 'alt', label: 'Alt Text', type: 'text' }
+        ]
+    },
+    {
+        type: 'video',
+        label: 'Video',
+        description: 'Embed a video',
+        icon: IconPhoto, // You might want a specific video icon if available
+        category: 'media',
+        properties: [
+            { name: 'url', label: 'Video URL', type: 'text', placeholder: 'https://...' },
+            { name: 'autoplay', label: 'Autoplay', type: 'switch', defaultValue: false }
+        ]
+    },
+    {
+        type: 'audio',
+        label: 'Audio',
+        description: 'Play an audio clip',
+        icon: IconPhoto, // Using generic photo/media icon for now or import Music/Volume
+        category: 'media',
+        properties: [
+            { name: 'url', label: 'Audio URL', type: 'text', placeholder: 'https://...' },
+            { name: 'autoplay', label: 'Autoplay', type: 'switch', defaultValue: false }
         ]
     },
 ];
