@@ -37,6 +37,7 @@ const commonProperties: PropertyField[] = [
     { name: 'label', label: 'Field Label', type: 'text', placeholder: 'e.g., What is your name?', defaultValue: 'New Question' },
     { name: 'description', label: 'Description', type: 'textarea', placeholder: 'Helper text for the user', defaultValue: '' },
     { name: 'required', label: 'Required', type: 'switch', defaultValue: false },
+    { name: 'condition', label: 'Logic Applied To This Node', type: 'condition', defaultValue: { logicType: 'AND', rules: [] }, helperText: 'Define when this node should be shown (Skip Logic)' },
 ];
 
 export const NODE_DEFINITIONS: NodeDefinition[] = [

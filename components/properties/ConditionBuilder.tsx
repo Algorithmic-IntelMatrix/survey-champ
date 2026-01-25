@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 interface LogicRule {
     id: string; // Unique ID for keying
     field: string;
+    subField?: string; // For Matrix rows or complex nested fields
     operator: string;
     value: any;
     valueType: 'static' | 'variable'; // Compare against static value or another node
@@ -35,11 +36,13 @@ const OPERATORS = [
 ];
 
 export const ConditionBuilder = ({ value, onChange, nodes }: ConditionBuilderProps) => {
-    // Determine valid Input/Choice nodes
+    // Determine valid nodes for logic (Any node that isn't purely structural)
     const validQuestions = useMemo(() => {
         return nodes.filter(n => {
             const def = getNodeDefinition(n.type || '');
-            return def && (def.category === 'input' || def.category === 'choice') && n.id !== 'current';
+            // Exclude structural/logic nodes, allow everything else (inputs, choices, custom, etc)
+            const isStructural = ['start', 'end', 'branch', 'image', 'video', 'audio'].includes(n.type || '');
+            return def && !isStructural && n.id !== 'current';
         });
     }, [nodes]);
 
@@ -129,7 +132,20 @@ const RuleRow = ({ rule, index, onUpdate, onRemove, validQuestions }: {
 
     // Find the currently selected question (Source)
     const selectedQuestion = validQuestions.find(n => n.id === rule.field);
-    const questionOptions = selectedQuestion?.data?.options as any[];
+
+    // Resolve options based on node type
+    let questionOptions: any[] = [];
+    if (selectedQuestion) {
+        if (selectedQuestion.type === 'matrixChoice') {
+            questionOptions = (selectedQuestion.data.columns as any[]) || [];
+        } else if (selectedQuestion.type === 'cascadingChoice') {
+            // Flatten all options from all steps for now (simplified)
+            const steps = (selectedQuestion.data.steps as any[]) || [];
+            questionOptions = steps.flatMap((s: any) => s.options || []);
+        } else {
+            questionOptions = (selectedQuestion.data.options as any[]) || [];
+        }
+    }
 
     return (
         <div className="relative pl-3 border-l-2 border-border/50 group/row">
@@ -144,16 +160,34 @@ const RuleRow = ({ rule, index, onUpdate, onRemove, validQuestions }: {
             <div className="space-y-2 pr-4">
                 {/* Field & Operator Row */}
                 <div className="grid grid-cols-2 gap-2">
-                    <select
-                        className="w-full text-[10px] p-1.5 rounded-md border border-input bg-background"
-                        value={rule.field}
-                        onChange={(e) => onUpdate({ field: e.target.value })}
-                    >
-                        <option value="">Select Question...</option>
-                        {validQuestions.map(n => (
-                            <option key={n.id} value={n.id}>{String(n.data.label || n.id)}</option>
-                        ))}
-                    </select>
+                    <div className="flex gap-1">
+                        <select
+                            className="w-full text-[10px] p-1.5 rounded-md border border-input bg-background"
+                            value={rule.field}
+                            onChange={(e) => onUpdate({ field: e.target.value, subField: '' })}
+                        >
+                            <option value="">Select Field...</option>
+                            {validQuestions.map(n => (
+                                <option key={n.id} value={n.id}>{String(n.data.label || n.id)}</option>
+                            ))}
+                        </select>
+
+                        {/* SubField for Matrix (Rows) */}
+                        {selectedQuestion?.type === 'matrixChoice' && (
+                            <select
+                                className="w-24 shrink-0 text-[10px] p-1.5 rounded-md border border-input bg-background"
+                                value={rule.subField || ''}
+                                onChange={(e) => onUpdate({ subField: e.target.value })}
+                            >
+                                <option value="">Row...</option>
+                                {(selectedQuestion.data.rows as any[] || []).map((row: any, i: number) => (
+                                    <option key={i} value={row.label || row.value}>
+                                        {row.label}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
 
                     <select
                         className="w-full text-[10px] p-1.5 rounded-md border border-input bg-background"
