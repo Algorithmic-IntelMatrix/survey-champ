@@ -45,18 +45,18 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="border border-neutral-200 mx-auto w-full max-w-md rounded-none p-4 md:rounded-2xl md:p-8 bg-white dark:bg-black">
-      <h2 className="text-xl font-bold text-neutral-800 dark:text-neutral-200">
+    <div className="border border-border mx-auto w-full max-w-md rounded-none p-4 md:rounded-2xl md:p-8 bg-card text-card-foreground shadow-sm">
+      <h2 className="text-xl font-bold">
         Welcome to AIM
       </h2>
-      <p className="mt-2 max-w-sm text-sm text-neutral-600 dark:text-neutral-300">
+      <p className="mt-2 max-w-sm text-sm text-muted-foreground">
         Login to AIM if you can because we don&apos;t have a login flow
         Contact AIM for login credentials
       </p>
 
       <form className="my-8" onSubmit={handleSubmit}>
         <LabelInputContainer className="mb-4">
-          <Label htmlFor="email">Email Address</Label>
+          <Label htmlFor="email" className="text-foreground">Email Address</Label>
           <Input
             id="email"
             placeholder="projectmayhem@fc.com"
@@ -64,10 +64,11 @@ export default function LoginForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            className="bg-background border-border text-foreground placeholder:text-muted-foreground"
           />
         </LabelInputContainer>
         <LabelInputContainer className="mb-4">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password" className="text-foreground">Password</Label>
           <Input
             id="password"
             placeholder="••••••••"
@@ -75,10 +76,11 @@ export default function LoginForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            className="bg-background border-border text-foreground placeholder:text-muted-foreground"
           />
         </LabelInputContainer>
         <button
-          className="group/btn cursor-pointer relative block h-10 w-full rounded-md bg-gradient-to-br from-black to-neutral-600 font-medium text-white shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:bg-zinc-800 dark:from-zinc-900 dark:to-zinc-900 dark:shadow-[0px_1px_0px_0px_#27272a_inset,0px_-1px_0px_0px_#27272a_inset] disabled:opacity-50"
+          className="group/btn cursor-pointer relative block h-10 w-full rounded-md bg-primary text-primary-foreground font-medium shadow-sm hover:opacity-90 transition-all disabled:opacity-50"
           type="submit"
           disabled={loading}
         >
@@ -86,7 +88,7 @@ export default function LoginForm() {
           <BottomGradient />
         </button>
 
-        <div className="my-8 h-[1px] w-full bg-gradient-to-r from-transparent via-neutral-300 to-transparent dark:via-neutral-700" />
+        <div className="my-8 h-[1px] w-full bg-gradient-to-r from-transparent via-border to-transparent" />
       </form>
     </div>
   );

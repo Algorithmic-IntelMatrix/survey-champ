@@ -33,8 +33,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     // Prevent flash of content
     if (isAuthenticated === null) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-black">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500"></div>
+            <div className="flex items-center justify-center min-h-screen bg-background">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-muted border-t-primary"></div>
             </div>
         );
     }
