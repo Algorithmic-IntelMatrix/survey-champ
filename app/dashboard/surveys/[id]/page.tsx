@@ -126,7 +126,32 @@ function SurveyFlow() {
             </div>
 
             <div className="absolute top-4 right-4 z-50 flex gap-2">
-                <button className="px-4 py-2 bg-white text-sm font-medium border border-border rounded-md shadow-sm hover:bg-muted transition-colors">
+                <button
+                    onClick={() => {
+                        // 1. Create Adjacency List
+                        const graph: Record<string, any> = {};
+
+                        // Initialize nodes
+                        nodes.forEach(node => {
+                            graph[node.id] = {
+                                type: node.type,
+                                data: node.data,
+                                next: []
+                            };
+                        });
+
+                        // Populate edges (connections)
+                        edges.forEach(edge => {
+                            if (graph[edge.source]) {
+                                graph[edge.source].next.push(edge.target);
+                            }
+                        });
+
+                        console.log("SURVEY_JUMP_LOGIC_DAG:", JSON.stringify(graph, null, 2));
+                        alert("Draft Saved! Check Console for DAG.");
+                    }}
+                    className="px-4 py-2 bg-white text-sm font-medium border border-border rounded-md shadow-sm hover:bg-muted transition-colors"
+                >
                     Save Draft
                 </button>
                 <button className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md shadow-md hover:bg-primary/90 transition-colors">
