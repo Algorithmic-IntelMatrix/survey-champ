@@ -1,5 +1,4 @@
 import AuthGuard from "@/components/AuthGuard";
-import Sidebar from "@/components/Sidebar";
 import SurveyNodeSidebar from "@/components/SurveyNodeSidebar";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
