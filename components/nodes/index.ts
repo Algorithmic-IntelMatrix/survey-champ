@@ -9,15 +9,18 @@ import SliderNode from './SliderNode';
 import BranchNode from './BranchNode';
 import ConsentNode from './ConsentNode';
 import MultiInputNode from './MultiInputNode';
+import ZipCodeInputNode from './ZipCodeInputNode';
+import MatrixChoiceNode from './MatrixChoiceNode';
+import CascadingChoiceNode from './CascadingChoiceNode';
 import { NODE_DEFINITIONS } from './definitions';
 
 // Map of Component Implementations
 const componentMap: Record<string, React.ComponentType<any>> = {
     textInput: TextInputNode,
-    numberInput: TextInputNode, 
+    numberInput: TextInputNode,
     emailInput: TextInputNode,
     dateInput: TextInputNode,
-    
+
     singleChoice: ChoiceNode,
     multipleChoice: ChoiceNode,
     rating: RatingNode,
@@ -25,18 +28,21 @@ const componentMap: Record<string, React.ComponentType<any>> = {
     ranking: RankingNode,
     consent: ConsentNode,
     multiInput: MultiInputNode,
-    
+
     image: MediaNode,
-    video: MediaNode, 
-    audio: MediaNode, 
-    
+    video: MediaNode,
+    audio: MediaNode,
+
     start: StartNode,
     end: EndNode,
-    branch: BranchNode
+    branch: BranchNode,
+
+    zipCodeInput: ZipCodeInputNode,
+    matrixChoice: MatrixChoiceNode,
+    cascadingChoice: CascadingChoiceNode,
 };
 
 export const nodeTypes: NodeTypes = componentMap;
 
-// Export definitions for use in Sidebar
 export * from './definitions';
 

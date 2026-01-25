@@ -1,7 +1,7 @@
 import { IconTextCaption, IconNumbers, IconMail, IconCalendar, IconListDetails, IconCheckbox, IconStar, IconArrowMerge, IconForbid, IconPhoto, IconForms, IconListCheck, IconGitBranch, IconListNumbers } from '@tabler/icons-react';
 
 export type NodeCategory = 'input' | 'choice' | 'logic' | 'media' | 'flow';
-export type PropertyType = 'text' | 'textarea' | 'number' | 'switch' | 'select' | 'color' | 'options' | 'condition';
+export type PropertyType = 'text' | 'textarea' | 'number' | 'switch' | 'select' | 'color' | 'options' | 'condition' | 'stepBuilder';
 
 export interface PropertyField {
     name: string;
@@ -247,6 +247,43 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
         properties: [
             { name: 'url', label: 'Audio URL', type: 'text', placeholder: 'https://...' },
             { name: 'autoplay', label: 'Autoplay', type: 'switch', defaultValue: false }
+        ]
+    },
+
+    // Special Inputs
+    {
+        type: 'zipCodeInput',
+        label: 'Accepted Zip Codes',
+        description: 'Validate against a list of zip codes',
+        icon: IconForms, // Using generic icon
+        category: 'input',
+        properties: [
+            ...commonProperties,
+            { name: 'allowedZips', label: 'Allowed Zip Codes', type: 'textarea', placeholder: '10001, 10002, 90210... (Leave empty to allow all)', helperText: 'Comma separated list of allowed codes' }
+        ]
+    },
+    {
+        type: 'matrixChoice',
+        label: 'Grid / Matrix',
+        description: 'Grid of rows and columns',
+        icon: IconListCheck,
+        category: 'choice',
+        properties: [
+            ...commonProperties,
+            { name: 'rows', label: 'Rows (Questions)', type: 'options', defaultValue: [{ label: 'Performance', value: 'p' }, { label: 'Design', value: 'd' }] },
+            { name: 'columns', label: 'Columns (Options)', type: 'options', defaultValue: [{ label: 'Poor', value: '1' }, { label: 'Great', value: '5' }] },
+            { name: 'multiple', label: 'Allow Multiple', type: 'switch', defaultValue: false }
+        ]
+    },
+    {
+        type: 'cascadingChoice',
+        label: 'Multi-Step Select',
+        description: 'Conditional drill-down options',
+        icon: IconListDetails,
+        category: 'choice',
+        properties: [
+            ...commonProperties,
+            { name: 'steps', label: 'Steps', type: 'stepBuilder', defaultValue: [{ id: 's1', title: 'Step 1', options: [{ label: 'Option A', value: 'optA' }] }] }
         ]
     },
 ];

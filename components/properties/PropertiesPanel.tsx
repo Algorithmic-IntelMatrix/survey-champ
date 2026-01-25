@@ -4,6 +4,7 @@ import { getNodeDefinition, PropertyField } from "@/components/nodes/definitions
 import { IconX } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import { ConditionBuilder } from "./ConditionBuilder";
+import { StepsBuilder } from "./StepsBuilder";
 
 interface PropertiesPanelProps {
     node: Node | null;
@@ -154,6 +155,13 @@ function FieldRenderer({ field, value, onChange, nodes }: { field: PropertyField
                         + Add Option
                     </button>
                 </div>
+            );
+        case 'stepBuilder':
+            return (
+                <StepsBuilder
+                    value={value || []}
+                    onChange={onChange}
+                />
             );
         default:
             return <div className="text-xs text-destructive">Unsupported field type: {field.type}</div>;
