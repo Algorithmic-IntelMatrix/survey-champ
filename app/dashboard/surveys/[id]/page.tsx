@@ -26,11 +26,13 @@ import {
     useReactFlow,
     type ReactFlowInstance
 } from '@xyflow/react';
-import { nodeTypes } from '@/components/nodes';
+import { nodeTypes, getNodeInitialData } from '@/components/nodes';
 import SurveyNodeSidebar from '@/components/SurveyNodeSidebar';
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
+
+import PropertiesPanel from '@/components/properties/PropertiesPanel';
 
 function SurveyFlow() {
     // Initial nodes for testing
@@ -39,10 +41,14 @@ function SurveyFlow() {
             id: '1',
             type: 'textInput',
             position: { x: 250, y: 5 },
-            data: { label: 'Customer Name', question: 'What is your full name?' }
+            data: getNodeInitialData('textInput')
         }
     ]);
     const [edges, setEdges] = useState<ReactFlowEdge[]>([]);
+
+    // Selection State
+    const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
     // Use undefined as initial state for the instance
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | undefined>(undefined);
     const { screenToFlowPosition } = useReactFlow();
@@ -51,6 +57,14 @@ function SurveyFlow() {
         (changes) => setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot) as ReactFlowNode[]),
         [],
     );
+    // Auto-deselect when clicking empty pane
+    const onPaneClick = useCallback(() => setSelectedNodeId(null), []);
+
+    // Select node on click
+    const onNodeClick = useCallback((event: React.MouseEvent, node: ReactFlowNode) => {
+        setSelectedNodeId(node.id);
+    }, []);
+
     const onEdgesChange: OnEdgesChange = useCallback(
         (changes) => setEdges((edgesSnapshot) => applyEdgeChanges(changes, edgesSnapshot) as ReactFlowEdge[]),
         [],
@@ -89,14 +103,16 @@ function SurveyFlow() {
             };
 
             setNodes((nds) => nds.concat(newNode));
+            setSelectedNodeId(newNode.id); // Auto-select new node
         },
         [screenToFlowPosition],
     );
 
     return (
-        <div className="flex w-full h-screen bg-background">
+        <div className="flex w-full h-full bg-background overflow-hidden">
             <SurveyNodeSidebar />
-            <div className="flex-1 h-full relative" onDragOver={onDragOver} onDrop={onDrop}>
+
+            <div className="flex-1 h-full relative border-r border-border" onDragOver={onDragOver} onDrop={onDrop}>
                 <ReactFlow
                     nodes={nodes}
                     edges={edges}
@@ -105,6 +121,8 @@ function SurveyFlow() {
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnect}
                     onInit={setReactFlowInstance}
+                    onNodeClick={onNodeClick}
+                    onPaneClick={onPaneClick}
                     fitView
                     className="bg-muted/10 px-10"
                 >
@@ -112,6 +130,22 @@ function SurveyFlow() {
                     <Controls />
                 </ReactFlow>
             </div>
+
+            {/* Right Sidebar: Properties Panel */}
+            {selectedNodeId && nodes.find(n => n.id === selectedNodeId) && (
+                <PropertiesPanel
+                    node={nodes.find(n => n.id === selectedNodeId) || null}
+                    onChange={(fieldName, value) => {
+                        setNodes(nds => nds.map(n => {
+                            if (n.id === selectedNodeId) {
+                                return { ...n, data: { ...n.data, [fieldName]: value } };
+                            }
+                            return n;
+                        }));
+                    }}
+                    onClose={() => setSelectedNodeId(null)}
+                />
+            )}
         </div>
     );
 }

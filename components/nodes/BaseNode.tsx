@@ -44,7 +44,7 @@ const BaseNode = ({ id, selected, data, children, icon: Icon, color = "bg-primar
                 <Handle
                     type="target"
                     position={handles.target}
-                    className="w-3 h-3 !bg-muted-foreground border-2 border-background"
+                    className="w-3 h-3 bg-muted-foreground border-2 border-background"
                 />
             )}
 
@@ -77,7 +77,7 @@ const BaseNode = ({ id, selected, data, children, icon: Icon, color = "bg-primar
                 <Handle
                     type="source"
                     position={handles.source}
-                    className="w-3 h-3 !bg-primary border-2 border-background"
+                    className="w-3 h-3 bg-primary border-2 border-background"
                 />
             )}
         </div>

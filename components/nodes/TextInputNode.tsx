@@ -6,9 +6,17 @@ import { IconTextCaption } from '@tabler/icons-react';
 interface TextInputData extends BaseNodeData {
     placeholder?: string;
     value?: string;
+    // BaseNodeData enforces 'label: string', so we must either make it optional here or ensure it's always passed.
+    // However, BaseNodeData actually says 'label: string', so we don't need to redeclare it as optional unless we want to override.
+    // The previous error was because I redeclared it as optional 'label?: string' which conflicts.
+    // I will just remove the redeclaration to inherit from BaseNodeData.
+    description?: string;
+    required?: boolean;
 }
 
 const TextInputNode = (props: NodeProps<any>) => {
+    const { label, placeholder, description, required } = props.data;
+
     return (
         <BaseNode
             id={props.id}
@@ -18,21 +26,22 @@ const TextInputNode = (props: NodeProps<any>) => {
             handles={{ source: Position.Right, target: Position.Left }}
         >
             <div className="space-y-3">
-                <label className="text-xs font-medium text-muted-foreground block">
-                    Question Title
-                </label>
+                <div className="space-y-1">
+                    <label className="text-sm font-medium text-foreground flex items-center gap-1">
+                        {label || "Text Question"}
+                        {required && <span className="text-destructive">*</span>}
+                    </label>
+                    {description && (
+                        <p className="text-xs text-muted-foreground">{description}</p>
+                    )}
+                </div>
+
                 <input
                     type="text"
-                    className="w-full bg-transparent border-b border-border py-1 text-sm font-medium focus:outline-hidden focus:border-primary transition-colors placeholder:font-normal"
-                    defaultValue={props.data.question || "What is your name?"}
-                    placeholder="Enter your question here..."
+                    readOnly
+                    className="w-full bg-transparent border-b border-border py-1 text-sm font-medium focus:outline-hidden focus:border-primary transition-colors placeholder:text-muted-foreground/50 cursor-default"
+                    placeholder={placeholder || "User's answer..."}
                 />
-
-                <div className="pt-2">
-                    <div className="w-full p-2 rounded-md bg-muted/50 border border-border text-xs text-muted-foreground italic">
-                        User's answer will appear here...
-                    </div>
-                </div>
             </div>
         </BaseNode>
     );
