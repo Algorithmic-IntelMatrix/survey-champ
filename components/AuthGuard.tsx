@@ -2,18 +2,32 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { authApi } from "@/api/auth";
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
     const router = useRouter();
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        if (!token) {
-            router.replace("/");
-        } else {
-            setIsAuthenticated(true);
-        }
+        const verifyToken = async () => {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                router.replace("/");
+                return;
+            }
+
+            try {
+                await authApi.me();
+                setIsAuthenticated(true);
+            } catch (error) {
+                console.error("Auth verification failed", error);
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                router.replace("/");
+            }
+        };
+
+        verifyToken();
     }, [router]);
 
     // Prevent flash of content

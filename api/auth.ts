@@ -11,4 +11,9 @@ export const authApi = {
     const response = await apiClient.post("/auth/signup", data);
     return response.data;
   },
+
+  me: async (): Promise<any> => {
+    const response = await apiClient.get("/auth/me");
+    return response.data;
+  }
 };

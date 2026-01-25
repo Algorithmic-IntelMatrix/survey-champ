@@ -14,6 +14,13 @@ export default function LoginForm() {
   const [loading, setLoading] = React.useState(false);
   const router = useRouter();
 
+  React.useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      router.replace("/dashboard");
+    }
+  }, [router]);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
