@@ -88,8 +88,11 @@ export class DAGReader {
      * Evaluates a single logic rule against user responses.
      */
     private evaluateRule(rule: LogicRule, responses: Record<string, any>): boolean {
+        // Soft check for field existence in responses.
+        // If it's missing, it's likely a skipped question or we're probing a path
+        // that hasn't been reached yet. We return false instead of throwing.
         if (!(rule.field in responses)) {
-            throw new Error(`Referenced field '${rule.field}' is missing from responses.`);
+            return false;
         }
 
         let value = responses[rule.field];
@@ -102,7 +105,7 @@ export class DAGReader {
         let targetValue = rule.value;
         if (rule.valueType === 'variable') {
             if (!(rule.value in responses)) {
-                throw new Error(`Referenced variable '${rule.value}' is missing from responses.`);
+                return false;
             }
             targetValue = responses[rule.value];
         }

@@ -117,7 +117,12 @@ export const validateWorkflow = (nodes: Node[], edges: Edge[]): { isValid: boole
             // Causal Ordering: Referenced fields must be from nodes that appear BEFORE this branch
             const referencedFields = new Set<string>();
             const collectFields = (item: any) => {
-                if (item.type === 'rule') referencedFields.add(item.field);
+                if (item.type === 'rule') {
+                    if (item.field) referencedFields.add(item.field);
+                    if (item.valueType === 'variable' && item.value) {
+                        referencedFields.add(item.value);
+                    }
+                }
                 else if (item.children) item.children.forEach(collectFields);
             };
             if (condition) collectFields(condition);
