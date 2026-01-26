@@ -1,7 +1,7 @@
 import React from "react";
 import { useReactFlow, Node } from "@xyflow/react";
 import { getNodeDefinition, PropertyField } from "@/components/nodes/definitions";
-import { IconX } from "@tabler/icons-react";
+import { IconX, IconFolderPlus } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import { ConditionBuilder } from "./ConditionBuilder";
 import { StepsBuilder } from "./StepsBuilder";
@@ -99,6 +99,43 @@ function FieldRenderer({ field, value, onChange, nodes }: { field: PropertyField
                     rows={3}
                     className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md focus:outline-hidden focus:ring-1 focus:ring-primary transition-all resize-y"
                 />
+            );
+        case 'fileTextarea':
+            const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const text = event.target?.result as string;
+                    if (text) {
+                        const tokens = text.split(/[\n,]+/).map(t => t.trim()).filter(t => t.length > 0);
+                        if (tokens.length > 0) {
+                            const unique = Array.from(new Set(tokens)).join(', ');
+                            onChange(unique);
+                        }
+                    }
+                };
+                reader.readAsText(file);
+            };
+
+            return (
+                <div className="space-y-1">
+                    <textarea
+                        value={value || ""}
+                        onChange={(e) => onChange(e.target.value)}
+                        placeholder={field.placeholder}
+                        rows={3}
+                        className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md focus:outline-hidden focus:ring-1 focus:ring-primary transition-all resize-y"
+                    />
+                    <div className="flex justify-end">
+                        <label className="text-xs flex items-center gap-1 cursor-pointer text-primary hover:underline bg-primary/5 px-2 py-1 rounded-md transition-colors">
+                            <IconFolderPlus size={12} />
+                            <span>Import from .txt</span>
+                            <input type="file" accept=".txt,.csv" className="hidden" onChange={handleFileUpload} />
+                        </label>
+                    </div>
+                </div>
             );
         case 'number':
             return (

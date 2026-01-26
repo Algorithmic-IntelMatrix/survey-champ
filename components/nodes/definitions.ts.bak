@@ -1,7 +1,7 @@
 import { IconTextCaption, IconNumbers, IconMail, IconCalendar, IconListDetails, IconCheckbox, IconStar, IconArrowMerge, IconForbid, IconPhoto, IconForms, IconListCheck, IconGitBranch, IconListNumbers } from '@tabler/icons-react';
 
 export type NodeCategory = 'input' | 'choice' | 'logic' | 'media' | 'flow';
-export type PropertyType = 'text' | 'textarea' | 'number' | 'switch' | 'select' | 'color' | 'options' | 'condition' | 'stepBuilder' | 'fileTextarea';
+export type PropertyType = 'text' | 'textarea' | 'number' | 'switch' | 'select' | 'color' | 'options' | 'condition' | 'stepBuilder';
 
 export interface PropertyField {
     name: string;
@@ -274,7 +274,7 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
         category: 'input',
         properties: [
             ...commonProperties,
-            { name: 'allowedZips', label: 'Allowed Zip Codes', type: 'fileTextarea', placeholder: '10001, 10002, 90210... (Leave empty to allow all)', helperText: 'Validation: Only users entering these zip codes can proceed. Others will be blocked.' }
+            { name: 'allowedZips', label: 'Allowed Zip Codes', type: 'textarea', placeholder: '10001, 10002, 90210... (Leave empty to allow all)', helperText: 'Comma separated list of allowed codes' }
         ]
     },
     {
@@ -322,23 +322,3 @@ export interface LogicGroup {
 }
 
 export type LogicItem = LogicGroup | LogicRule;
-
-// Helper to get initial data with defaults
-export const getNodeInitialData = (type: string) => {
-    const def = NODE_DEFINITIONS.find(n => n.type === type);
-    if (!def) return { label: 'New Node' };
-
-    const defaults: Record<string, any> = {};
-    def.properties.forEach(prop => {
-        if (prop.defaultValue !== undefined) {
-            defaults[prop.name] = prop.defaultValue;
-        }
-    });
-
-    return {
-        label: def.label,
-        ...defaults
-    };
-};
-
-export const getNodeDefinition = (type: string) => NODE_DEFINITIONS.find(n => n.type === type);

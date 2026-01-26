@@ -27,9 +27,10 @@ import { IconCloudUpload, IconCheck, IconAlertCircle, IconLoader2 } from '@table
 import { validateWorkflow } from '@/lib/validate-workflow';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { generateUniqueId } from "@/lib/utils";
 
-let id = 0;
-const getId = () => `dndnode_${id++}`;
+// Helper to generate unique ID
+const getId = () => generateUniqueId('node');
 
 // ... (helper function remains same, not touching it if not needed, but replace_file_content needs start/end)
 // Wait, I can't easily inject the import if I target line 237. I should do import separately or use a larger chunk.
