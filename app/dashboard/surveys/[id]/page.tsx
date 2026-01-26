@@ -20,9 +20,10 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { nodeTypes, getNodeInitialData } from '@/components/nodes';
+import { nodeTypes, edgeTypes, getNodeInitialData } from '@/components/nodes';
 import SurveyNodeSidebar from '@/components/SurveyNodeSidebar';
 import PropertiesPanel from '@/components/properties/PropertiesPanel';
+import NodeViewer from '@/components/NodeViewer';
 import { IconCloudUpload, IconCheck, IconAlertCircle, IconLoader2, IconPlayerPlay, IconWorld, IconShare, IconCopy, IconX, IconExternalLink } from '@tabler/icons-react';
 import { validateWorkflow } from '@/lib/validate-workflow';
 import { toast } from 'sonner';
@@ -275,7 +276,7 @@ function SurveyFlow() {
         [],
     );
     const onConnect: OnConnect = useCallback(
-        (params) => setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot)),
+        (params) => setEdges((edgesSnapshot) => addEdge({ ...params, type: 'default' }, edgesSnapshot)),
         [],
     );
 
@@ -335,6 +336,7 @@ function SurveyFlow() {
                     nodes={nodes}
                     edges={edges}
                     nodeTypes={nodeTypes}
+                    edgeTypes={edgeTypes}
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnect}
@@ -347,6 +349,8 @@ function SurveyFlow() {
                     <Background />
                     <Controls />
                 </ReactFlow>
+
+                <NodeViewer nodes={nodes} onSelect={setSelectedNodeId} />
             </div>
 
             {/* Top Right Controls & Status */}

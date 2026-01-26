@@ -44,5 +44,10 @@ const componentMap: Record<string, React.ComponentType<any>> = {
 
 export const nodeTypes: NodeTypes = componentMap;
 
+import DeleteableEdge from '../edges/DeleteableEdge';
+export const edgeTypes = {
+    default: DeleteableEdge,
+};
+
 export * from './definitions';
 
