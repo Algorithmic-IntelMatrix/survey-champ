@@ -2,7 +2,7 @@
 import { surveyWorkflowApi } from "@/api/surveyWorkflow"
 import { useEffect, useState, useMemo, useRef } from "react"
 import { DAGReader } from "../properties/DagReader"
-import { IconArrowRight, IconRefresh, IconCheck, IconAlertCircle, IconTimeline, IconUser, IconRobot, IconSend, IconStar } from "@tabler/icons-react"
+import { IconArrowRight, IconRefresh, IconCheck, IconAlertCircle, IconTimeline, IconUser, IconRobot, IconSend, IconStar, IconCommand } from "@tabler/icons-react"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { ChoiceNode } from "./nodes/ChoiceNode"
@@ -187,171 +187,159 @@ export const SurveyRunner = ({ id }: { id: string }) => {
     const isEnd = currentNode?.type === 'end';
 
     return (
-        <div className="flex flex-col h-screen w-screen bg-[#f9fafb] overflow-hidden relative font-sans selection:bg-primary/20">
+        <div className="flex flex-col h-screen w-screen bg-background overflow-hidden relative font-sans selection:bg-primary/10">
 
             {/* Navigation Header */}
-            <header className="flex items-center justify-between px-10 py-6 bg-white/70 backdrop-blur-xl border-b sticky top-0 z-50">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-primary shadow-lg shadow-primary/20 flex items-center justify-center text-primary-foreground transform rotate-3">
-                        <IconRobot size={28} />
-                    </div>
-                    <div>
-                        <h1 className="text-lg font-black tracking-tight text-foreground/90">Survey Champ</h1>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1.5 font-bold uppercase tracking-wider">
-                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" /> Real-time Assistant
-                        </p>
-                    </div>
+            <header className="flex items-center justify-between px-8 py-6 bg-background/90 backdrop-blur-sm sticky top-0 z-50">
+                <div className="flex items-center gap-2 text-foreground/80">
+                    <IconCommand size={20} />
+                    <span className="text-sm font-semibold tracking-wide">Survey Champ</span>
                 </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={handleReset}
-                        className="px-5 py-2.5 bg-card hover:bg-muted border rounded-2xl flex items-center gap-2 text-sm font-bold transition-all shadow-sm active:scale-95"
-                    >
-                        <IconRefresh size={18} /> Reset
-                    </button>
-                </div>
+                <button
+                    onClick={handleReset}
+                    className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest"
+                >
+                    Start Over
+                </button>
             </header>
 
             {/* Main Conversation Flow */}
             <main
                 ref={scrollRef}
-                className="flex-1 overflow-y-auto w-full px-12 py-12 space-y-12 scroll-smooth"
+                className="flex-1 overflow-y-auto w-full max-w-3xl mx-auto px-6 py-12 space-y-6 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']"
             >
                 <AnimatePresence initial={false}>
                     {messages.map((msg) => (
                         <motion.div
                             key={msg.id}
-                            initial={{ opacity: 0, y: 30, scale: 0.98 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
                             className={cn(
-                                "flex gap-8 w-full group",
-                                msg.role === 'user' ? "flex-row-reverse" : "flex-row"
+                                "flex flex-col w-full",
+                                msg.role === 'user' ? "items-end" : "items-start"
                             )}
                         >
                             <div className={cn(
-                                "w-14 h-14 rounded-2xl shrink-0 flex items-center justify-center shadow-md transform transition-all group-hover:scale-110",
-                                msg.role === 'user'
-                                    ? "bg-primary text-primary-foreground -rotate-3"
-                                    : "bg-white border text-muted-foreground rotate-3"
+                                "flex w-full items-center gap-3",
+                                msg.role === 'user' ? "flex-row-reverse" : "flex-row"
                             )}>
-                                {msg.role === 'user' ? <IconUser size={28} /> : <IconRobot size={28} />}
-                            </div>
-
-                            <div className={cn(
-                                "flex flex-col gap-4 w-full",
-                                msg.role === 'user' ? "items-end" : "items-start"
-                            )}>
+                                {/* Avatar */}
                                 <div className={cn(
-                                    "px-10 py-6 rounded-[2.5rem] text-xl font-medium shadow-sm transition-all max-w-[90%]",
+                                    "shrink-0 w-8 h-8 rounded-full flex items-center justify-center shadow-sm",
                                     msg.role === 'user'
-                                        ? "bg-primary text-primary-foreground rounded-tr-none"
-                                        : "bg-white border rounded-tl-none text-foreground/90 leading-relaxed shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]"
+                                        ? "bg-muted text-muted-foreground"
+                                        : "bg-primary text-primary-foreground"
+                                )}>
+                                    {msg.role === 'user' ? <IconUser size={16} /> : <IconRobot size={16} />}
+                                </div>
+
+                                {/* Message Bubble */}
+                                <div className={cn(
+                                    "max-w-[85%] transition-all",
+                                    msg.role === 'user'
+                                        ? "bg-muted/80 text-foreground/90 rounded-2xl px-6 py-4 text-base font-medium shadow-sm backdrop-blur-sm"
+                                        : "bg-card border border-border px-8 py-6 rounded-3xl rounded-tl-none shadow-sm text-xl md:text-2xl font-medium text-foreground tracking-tight leading-snug"
                                 )}>
                                     {msg.content}
                                 </div>
-
-                                {/* Specialized UI for current question */}
-                                {msg.role === 'assistant' && !isEnd && (
-                                    <div className="w-full pt-4 animate-in fade-in slide-in-from-top-4 duration-500">
-                                        <ChoiceNode
-                                            msg={msg}
-                                            currentNodeId={currentNodeId}
-                                            responses={responses}
-                                            setResponses={setResponses}
-                                            handleNext={handleNext}
-                                            workflow={workflow}
-                                        />
-                                        <RatingNode
-                                            msg={msg}
-                                            currentNodeId={currentNodeId}
-                                            responses={responses}
-                                            setResponses={setResponses}
-                                            handleNext={handleNext}
-                                            workflow={workflow}
-                                        />
-                                        <SliderNode
-                                            msg={msg}
-                                            currentNodeId={currentNodeId}
-                                            responses={responses}
-                                            setResponses={setResponses}
-                                            handleNext={handleNext}
-                                            workflow={workflow}
-                                        />
-                                        <MatrixNode
-                                            msg={msg}
-                                            currentNodeId={currentNodeId}
-                                            responses={responses}
-                                            setResponses={setResponses}
-                                            handleNext={handleNext}
-                                            workflow={workflow}
-                                        />
-                                        <CascadingNode
-                                            msg={msg}
-                                            currentNodeId={currentNodeId}
-                                            responses={responses}
-                                            setResponses={setResponses}
-                                            handleNext={handleNext}
-                                            workflow={workflow}
-                                        />
-                                        <ZipCodeNode
-                                            msg={msg}
-                                            currentNodeId={currentNodeId}
-                                            responses={responses}
-                                            setResponses={setResponses}
-                                            handleNext={handleNext}
-                                            workflow={workflow}
-                                        />
-                                        <StartNode
-                                            msg={msg}
-                                            currentNodeId={currentNodeId}
-                                            responses={responses}
-                                            setResponses={setResponses}
-                                            handleNext={handleNext}
-                                            workflow={workflow}
-                                        />
-                                    </div>
-                                )}
                             </div>
+
+                            {/* Specialized UI for current question */}
+                            {msg.role === 'assistant' && !isEnd && (
+                                <div className="w-full pt-6 pl-12 animate-in fade-in slide-in-from-bottom-2 duration-700">
+                                    <ChoiceNode
+                                        msg={msg}
+                                        currentNodeId={currentNodeId}
+                                        responses={responses}
+                                        setResponses={setResponses}
+                                        handleNext={handleNext}
+                                        workflow={workflow}
+                                    />
+                                    <RatingNode
+                                        msg={msg}
+                                        currentNodeId={currentNodeId}
+                                        responses={responses}
+                                        setResponses={setResponses}
+                                        handleNext={handleNext}
+                                        workflow={workflow}
+                                    />
+                                    <SliderNode
+                                        msg={msg}
+                                        currentNodeId={currentNodeId}
+                                        responses={responses}
+                                        setResponses={setResponses}
+                                        handleNext={handleNext}
+                                        workflow={workflow}
+                                    />
+                                    <MatrixNode
+                                        msg={msg}
+                                        currentNodeId={currentNodeId}
+                                        responses={responses}
+                                        setResponses={setResponses}
+                                        handleNext={handleNext}
+                                        workflow={workflow}
+                                    />
+                                    <CascadingNode
+                                        msg={msg}
+                                        currentNodeId={currentNodeId}
+                                        responses={responses}
+                                        setResponses={setResponses}
+                                        handleNext={handleNext}
+                                        workflow={workflow}
+                                    />
+                                    <ZipCodeNode
+                                        msg={msg}
+                                        currentNodeId={currentNodeId}
+                                        responses={responses}
+                                        setResponses={setResponses}
+                                        handleNext={handleNext}
+                                        workflow={workflow}
+                                    />
+                                    <StartNode
+                                        msg={msg}
+                                        currentNodeId={currentNodeId}
+                                        responses={responses}
+                                        setResponses={setResponses}
+                                        handleNext={handleNext}
+                                        workflow={workflow}
+                                    />
+                                </div>
+                            )}
                         </motion.div>
                     ))}
 
                     {isTyping && (
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="flex gap-8 mr-auto items-center"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="flex items-center gap-2 pl-1"
                         >
-                            <div className="w-14 h-14 rounded-2xl bg-white border flex items-center justify-center text-muted-foreground rotate-3 shadow-md">
-                                <IconRobot size={28} />
-                            </div>
-                            <div className="bg-white/50 backdrop-blur-md px-8 py-5 rounded-[2.5rem] rounded-tl-none flex gap-3 items-center shadow-sm">
-                                <span className="w-3 h-3 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                                <span className="w-3 h-3 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                                <span className="w-3 h-3 bg-primary/40 rounded-full animate-bounce" />
-                            </div>
+                            <span className="w-1.5 h-1.5 bg-foreground/20 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                            <span className="w-1.5 h-1.5 bg-foreground/20 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                            <span className="w-1.5 h-1.5 bg-foreground/20 rounded-full animate-bounce" />
                         </motion.div>
                     )}
                 </AnimatePresence>
 
                 {/* Vertical padding to ensure content isn't hidden by floating input */}
-                <div className="h-60" />
+                <div className="h-40" />
             </main>
 
             {/* Floating Action Input */}
             <AnimatePresence>
                 {!isEnd && currentNode && (currentNode.type === 'textInput' || currentNode.type === 'zipCodeInput') && (
                     <motion.div
-                        initial={{ y: 100, opacity: 0 }}
+                        initial={{ y: 50, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: 100, opacity: 0 }}
-                        className="fixed bottom-12 left-1/2 -translate-x-1/2 w-[90%] max-w-6xl px-6 z-50"
+                        exit={{ y: 50, opacity: 0 }}
+                        className="fixed bottom-0 left-0 w-full p-6 bg-linear-to-t from-background via-background/90 to-transparent z-50 flex justify-center"
                     >
-                        <div className="relative group filter drop-shadow-[0_30px_60px_rgba(0,0,0,0.15)]">
+                        <div className="w-full max-w-2xl relative group">
                             <input
                                 autoFocus
                                 type="text"
-                                placeholder={currentNode.type === 'zipCodeInput' ? "Enter Zip Code..." : "Type your answer here..."}
-                                className="w-full bg-white/80 backdrop-blur-3xl border-2 border-white/50 rounded-[3rem] pl-10 pr-24 py-8 text-2xl font-medium focus:ring-8 focus:ring-primary/5 focus:border-primary outline-none transition-all shadow-2xl placeholder:text-muted-foreground/40"
+                                placeholder={currentNode.type === 'zipCodeInput' ? "Enter Zip Code..." : "Type your answer..."}
+                                className="w-full bg-transparent border-b border-border py-4 text-xl md:text-2xl font-medium focus:border-foreground outline-none transition-all placeholder:text-muted-foreground/30 rounded-none"
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && inputValue.trim() && handleNext(inputValue)}
@@ -359,14 +347,11 @@ export const SurveyRunner = ({ id }: { id: string }) => {
                             <button
                                 disabled={!inputValue.trim()}
                                 onClick={() => handleNext(inputValue)}
-                                className="absolute right-4 top-4 w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all group-hover:shadow-primary/40"
+                                className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-foreground hover:bg-muted rounded-full transition-all disabled:opacity-30 disabled:hover:bg-transparent"
                             >
-                                <IconSend size={32} strokeWidth={3} />
+                                <IconArrowRight size={24} strokeWidth={1.5} />
                             </button>
                         </div>
-                        <p className="text-center mt-6 text-xs font-black uppercase tracking-[0.4em] text-muted-foreground/40">
-                            Press Enter to Send
-                        </p>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -375,18 +360,18 @@ export const SurveyRunner = ({ id }: { id: string }) => {
             {isEnd && (
                 <div className="fixed inset-0 pointer-events-none flex items-center justify-center z-50">
                     <motion.div
-                        initial={{ scale: 0.8, opacity: 0 }}
+                        initial={{ scale: 0.9, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ duration: 0.8, type: 'spring' }}
-                        className="bg-white/80 backdrop-blur-3xl p-12 rounded-[3.5rem] shadow-2xl shadow-green-500/20 text-center border-4 border-green-500/20"
+                        className="bg-white p-12 text-center max-w-xl pointer-events-auto"
                     >
-                        <div className="w-24 h-24 bg-green-500 text-white rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-green-500/30">
-                            <IconCheck size={48} strokeWidth={3} />
+                        <div className="w-16 h-16 bg-black text-white rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-2xl">
+                            <IconCheck size={32} strokeWidth={2} />
                         </div>
-                        <h2 className="text-4xl font-black tracking-tighter mb-2">Survey Completed!</h2>
-                        <p className="text-lg text-muted-foreground font-medium mb-8">Thank you for your valuable feedback.</p>
+                        <h2 className="text-3xl font-bold tracking-tight mb-3">All Done.</h2>
+                        <p className="text-lg text-muted-foreground font-medium mb-10 leading-relaxed">Thank you for sharing your thoughts with us.</p>
                         <button
-                            className="bg-foreground text-background px-10 py-5 rounded-[2rem] text-base font-black pointer-events-auto hover:scale-105 active:scale-95 transition-all"
+                            className="text-sm font-bold uppercase tracking-widest border-b-2 border-transparent hover:border-black transition-all pb-1"
                             onClick={() => window.location.href = '/dashboard'}
                         >
                             Return to Dashboard
@@ -399,9 +384,9 @@ export const SurveyRunner = ({ id }: { id: string }) => {
                 <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    className="fixed bottom-32 left-1/2 -translate-x-1/2 px-8 py-4 bg-destructive text-destructive-foreground text-sm font-black rounded-2xl flex items-center gap-3 shadow-2xl z-[60]"
+                    className="fixed bottom-10 left-1/2 -translate-x-1/2 px-6 py-3 bg-red-50 text-red-600 text-sm font-medium rounded-full flex items-center gap-2 shadow-sm border border-red-100 z-[60]"
                 >
-                    <IconAlertCircle size={20} strokeWidth={3} />
+                    <IconAlertCircle size={16} strokeWidth={2} />
                     {error}
                 </motion.div>
             )}

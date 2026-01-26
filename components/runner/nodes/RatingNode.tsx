@@ -15,8 +15,8 @@ export const RatingNode = ({ msg, currentNodeId, responses, handleNext, workflow
     if (msg.type !== 'rating') return null;
 
     return (
-        <div className="flex flex-col gap-6 items-start bg-white p-10 rounded-[3rem] border shadow-md">
-            <div className="flex gap-4">
+        <div className="flex flex-col gap-3 items-start animate-in fade-in duration-500">
+            <div className="flex gap-2 group/stars">
                 {Array.from({ length: maxRating }).map((_, i) => (
                     <button
                         key={i}
@@ -25,26 +25,26 @@ export const RatingNode = ({ msg, currentNodeId, responses, handleNext, workflow
                         onMouseLeave={() => isActive && setHovered(0)}
                         onClick={() => handleNext(i + 1)}
                         className={cn(
-                            "transition-all duration-300",
-                            isActive ? "hover:scale-150 group/star" : "cursor-default"
+                            "transition-all duration-300 p-1 rounded-full hover:bg-primary/5 focus:outline-none focus:ring-2 focus:ring-primary/50",
+                            isActive ? "cursor-pointer" : "cursor-default opacity-50"
                         )}
                     >
                         <IconStar
-                            size={56}
-                            strokeWidth={1.5}
+                            size={42}
+                            strokeWidth={1}
                             className={cn(
                                 "transition-all duration-300",
                                 (hovered || currentRating) > i
-                                    ? "text-yellow-400 fill-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.6)]"
-                                    : "text-muted-foreground/20"
+                                    ? "text-primary fill-primary scale-110"
+                                    : "text-muted-foreground/30 hover:text-muted-foreground/50"
                             )}
                         />
                     </button>
                 ))}
             </div>
             {isActive && (
-                <p className="text-sm text-muted-foreground font-black uppercase tracking-[0.2em] pl-2">
-                    Select your rating
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest pl-2">
+                    Click to rate
                 </p>
             )}
         </div>

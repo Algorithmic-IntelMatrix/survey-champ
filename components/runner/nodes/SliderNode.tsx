@@ -15,8 +15,8 @@ export const SliderNode = ({ msg, currentNodeId, responses, setResponses, handle
     const currentVal = responses[msg.nodeId!] ?? min;
 
     return (
-        <div className="w-full max-w-2xl bg-white p-10 rounded-[3rem] border shadow-md space-y-8">
-            <div className="relative h-16 flex items-center">
+        <div className="w-full max-w-xl space-y-8 py-4">
+            <div className="relative h-12 flex items-center">
                 <input
                     type="range"
                     disabled={!isActive}
@@ -24,24 +24,25 @@ export const SliderNode = ({ msg, currentNodeId, responses, setResponses, handle
                     max={max}
                     step={step}
                     className={cn(
-                        "w-full h-4 bg-muted rounded-full appearance-none accent-primary cursor-pointer transition-all",
-                        !isActive && "cursor-default opacity-40"
+                        "w-full h-2 bg-secondary rounded-full appearance-none cursor-pointer transition-all focus:outline-none focus:ring-4 focus:ring-primary/10",
+                        !isActive && "cursor-default opacity-40",
+                        "[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-8 [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-110"
                     )}
                     value={currentVal}
                     onChange={(e) => setResponses(prev => ({ ...prev, [msg.nodeId!]: Number(e.target.value) }))}
                 />
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-end border-b pb-4 border-border">
                 <div className="flex flex-col">
-                    <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Current Value</span>
-                    <span className="font-black text-primary text-5xl tabular-nums">{currentVal}</span>
+                    <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">Value</span>
+                    <span className="text-5xl font-light tracking-tighter tabular-nums text-foreground">{currentVal}</span>
                 </div>
                 {isActive && (
                     <button
                         onClick={() => handleNext(currentVal)}
-                        className="w-20 h-20 bg-primary text-primary-foreground rounded-[2rem] flex items-center justify-center shadow-2xl shadow-primary/30 hover:scale-[1.05] active:scale-95 transition-all"
+                        className="w-14 h-14 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg hover:bg-primary/90 active:scale-95 transition-all"
                     >
-                        <IconCheck size={36} strokeWidth={3} />
+                        <IconCheck size={24} strokeWidth={2} />
                     </button>
                 )}
             </div>

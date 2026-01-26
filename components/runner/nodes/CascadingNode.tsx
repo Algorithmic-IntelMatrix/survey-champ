@@ -1,6 +1,6 @@
 "use client"
 import { cn } from "@/lib/utils"
-import { IconArrowRight } from "@tabler/icons-react"
+import { IconArrowRight, IconChevronRight } from "@tabler/icons-react"
 import { NodeProps } from "./types"
 
 export const CascadingNode = ({ msg, currentNodeId, responses, setResponses, handleNext, workflow }: NodeProps) => {
@@ -14,20 +14,20 @@ export const CascadingNode = ({ msg, currentNodeId, responses, setResponses, han
     const isComplete = currentResponses.length === steps.length && currentResponses.every((r: any) => !!r);
 
     return (
-        <div className="w-full mt-6 bg-white p-8 rounded-[3rem] border shadow-md space-y-8 animate-in zoom-in-95 duration-500">
+        <div className="w-full mt-4 space-y-8 animate-in fade-in duration-500">
             {steps.map((step: any, si: number) => {
                 const showStep = si === 0 || !!currentResponses[si - 1];
                 if (!showStep) return null;
 
                 return (
-                    <div key={si} className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-500">
-                        <div className="flex items-center gap-3">
-                            <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-black">
+                    <div key={si} className="space-y-3 animate-in fade-in slide-in-from-left-2 duration-300">
+                        <div className="flex items-center gap-2 text-sm font-semibold tracking-wide uppercase text-muted-foreground">
+                            <span className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[10px] text-foreground">
                                 {si + 1}
                             </span>
-                            <h4 className="text-xl font-black tracking-tight">{step.title}</h4>
+                            {step.title}
                         </div>
-                        <div className="flex flex-wrap gap-3">
+                        <div className="flex flex-wrap gap-2">
                             {step.options?.map((opt: any, oi: number) => {
                                 const isSelected = currentResponses[si] === opt.value;
                                 return (
@@ -41,9 +41,11 @@ export const CascadingNode = ({ msg, currentNodeId, responses, setResponses, han
                                             setResponses(prev => ({ ...prev, [msg.nodeId!]: newResponses }));
                                         }}
                                         className={cn(
-                                            "px-8 py-4 rounded-2xl border-2 transition-all text-base font-bold shadow-sm",
-                                            isSelected ? "bg-primary text-primary-foreground border-primary scale-105" : "bg-white border-muted-foreground/10 hover:border-primary/30",
-                                            !isActive && !isSelected && "opacity-30"
+                                            "px-4 py-2 bg-card border rounded-lg transition-all text-sm font-medium hover:border-muted-foreground hover:bg-muted",
+                                            isSelected
+                                                ? "border-primary bg-primary text-primary-foreground shadow-md hover:bg-primary hover:border-primary"
+                                                : "border-border text-foreground",
+                                            !isActive && !isSelected && "opacity-40"
                                         )}
                                     >
                                         {opt.label}
@@ -55,12 +57,12 @@ export const CascadingNode = ({ msg, currentNodeId, responses, setResponses, han
                 );
             })}
             {isActive && isComplete && (
-                <div className="pt-4 border-t">
+                <div className="pt-4">
                     <button
                         onClick={() => handleNext(currentResponses)}
-                        className="w-full py-6 bg-primary text-primary-foreground rounded-[2rem] text-xl font-black shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+                        className="flex items-center gap-2 bg-primary text-primary-foreground px-8 py-3 rounded-full text-base font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all"
                     >
-                        Finalize Selections <IconArrowRight className="inline ml-2" />
+                        Confirm <IconArrowRight size={18} />
                     </button>
                 </div>
             )}

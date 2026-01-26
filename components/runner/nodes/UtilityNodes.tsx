@@ -9,13 +9,9 @@ export const ZipCodeNode = ({ msg, currentNodeId, workflow }: NodeProps) => {
     if (msg.type !== 'zipCodeInput' || !isActive) return null;
 
     return (
-        <div className="mt-4 flex flex-col gap-2 animate-in slide-in-from-top-2">
-            <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest pl-1">
-                Enter a valid Zip Code from: {nodeData.allowedZips || "Anywhere"}
-            </p>
-            <div className="flex items-center gap-2 bg-white/50 px-4 py-2 rounded-xl border border-dashed text-xs text-muted-foreground font-medium">
-                <IconAlertCircle size={14} /> Use the input bar below to provide your zip code.
-            </div>
+        <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground animate-in fade-in">
+            <IconAlertCircle size={16} />
+            <span className="font-medium">Please enter a valid Zip Code ({nodeData.allowedZips || "Any"}).</span>
         </div>
     )
 }
@@ -28,12 +24,10 @@ export const StartNode = ({ msg, currentNodeId, handleNext }: NodeProps) => {
     return (
         <button
             onClick={() => handleNext('started')}
-            className="group relative px-16 py-8 bg-primary text-primary-foreground rounded-[2.5rem] text-2xl font-black shadow-[0_20px_50px_rgba(var(--primary),0.3)] transition-all hover:scale-[1.05] active:scale-95 overflow-hidden"
+            className="group mt-6 px-8 py-3 bg-primary text-primary-foreground rounded-full text-base font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center gap-3"
         >
-            <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
-            <span className="relative flex items-center gap-4">
-                Let's Get Started <IconArrowRight size={28} strokeWidth={3} />
-            </span>
+            <span>Start Survey</span>
+            <IconArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
         </button>
     )
 }

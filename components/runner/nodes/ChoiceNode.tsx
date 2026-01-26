@@ -10,23 +10,21 @@ export const ChoiceNode = ({ msg, currentNodeId, responses, setResponses, handle
         const options = msg.options || [];
         if (options.length === 0 && isActive) {
             return (
-                <div className="p-6 bg-destructive/10 border border-destructive/20 rounded-2xl text-destructive text-sm font-bold flex items-center gap-2">
-                    <IconAlertCircle size={20} /> This question has no options configured. Flow may be blocked.
+                <div className="p-4 bg-destructive/10 text-destructive rounded-lg text-sm font-medium flex items-center gap-2">
+                    <IconAlertCircle size={18} /> No options available.
                 </div>
             )
         }
         return (
-            <div className="flex flex-wrap gap-6">
+            <div className="flex flex-wrap gap-3">
                 {options.map((opt: any, i: number) => (
                     <button
                         key={i}
                         disabled={!isActive}
                         onClick={() => handleNext(opt.value)}
                         className={cn(
-                            "px-14 py-7 rounded-[2rem] border-2 transition-all text-xl font-bold shadow-lg",
-                            isActive
-                                ? "bg-white hover:bg-primary/5 hover:border-primary hover:text-primary active:scale-95"
-                                : "bg-muted/40 text-muted-foreground border-transparent opacity-60"
+                            "px-8 py-4 bg-card border border-border shadow-sm rounded-xl transition-all text-lg font-medium hover:shadow-md hover:border-primary/50 active:scale-95 text-left",
+                            !isActive && "opacity-60 cursor-default shadow-none bg-muted"
                         )}
                     >
                         {opt.label}
@@ -41,8 +39,8 @@ export const ChoiceNode = ({ msg, currentNodeId, responses, setResponses, handle
         const currentValues = Array.isArray(responses[msg.nodeId!]) ? responses[msg.nodeId!] : [];
 
         return (
-            <div className="space-y-8 w-full">
-                <div className="flex flex-wrap gap-6">
+            <div className="space-y-6 w-full">
+                <div className="flex flex-wrap gap-3">
                     {options.map((opt: any, i: number) => {
                         const isSelected = currentValues.includes(opt.value);
                         return (
@@ -56,18 +54,18 @@ export const ChoiceNode = ({ msg, currentNodeId, responses, setResponses, handle
                                     setResponses(prev => ({ ...prev, [msg.nodeId!]: newValues }));
                                 }}
                                 className={cn(
-                                    "px-14 py-7 rounded-[2rem] border-2 transition-all text-xl font-bold shadow-lg flex items-center gap-4",
+                                    "px-6 py-4 bg-card border shadow-sm rounded-xl transition-all text-lg font-medium flex items-center gap-3 text-left hover:shadow-md",
                                     isSelected
-                                        ? "bg-primary text-primary-foreground border-primary scale-[1.02]"
-                                        : "bg-white border-border hover:border-primary",
-                                    !isActive && !isSelected && "bg-muted/40 text-muted-foreground border-transparent opacity-60"
+                                        ? "ring-2 ring-primary border-transparent shadow-md z-10"
+                                        : "border-border hover:border-gray-300 text-foreground/80",
+                                    !isActive && !isSelected && "opacity-50 grayscale shadow-none"
                                 )}
                             >
                                 <div className={cn(
-                                    "w-6 h-6 border-2 rounded-md flex items-center justify-center transition-all",
-                                    isSelected ? "bg-white border-white text-primary" : "bg-muted border-muted-foreground/20"
+                                    "w-5 h-5 border rounded flex items-center justify-center transition-colors shrink-0",
+                                    isSelected ? "bg-primary border-primary text-primary-foreground" : "bg-card border-muted-foreground/30"
                                 )}>
-                                    {isSelected && <IconCheck size={18} strokeWidth={4} />}
+                                    {isSelected && <IconCheck size={14} strokeWidth={3} />}
                                 </div>
                                 {opt.label}
                             </button>
@@ -78,9 +76,9 @@ export const ChoiceNode = ({ msg, currentNodeId, responses, setResponses, handle
                     <button
                         disabled={currentValues.length === 0}
                         onClick={() => handleNext(currentValues)}
-                        className="flex items-center gap-4 bg-primary text-primary-foreground px-16 py-7 rounded-[2.5rem] text-xl font-black shadow-2xl shadow-primary/30 hover:scale-[1.05] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+                        className="flex items-center gap-2 bg-primary text-primary-foreground px-8 py-3 rounded-full text-base font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-30 disabled:hover:translate-y-0"
                     >
-                        Continue Journey <IconArrowRight size={24} />
+                        Continue <IconArrowRight size={18} />
                     </button>
                 )}
             </div>

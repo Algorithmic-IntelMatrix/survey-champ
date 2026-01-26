@@ -15,14 +15,14 @@ export const MatrixNode = ({ msg, currentNodeId, responses, setResponses, handle
     const allAnswered = rows.every((row: any) => currentResponse[row.value]);
 
     return (
-        <div className="w-full mt-6 bg-white rounded-[2.5rem] border shadow-md overflow-hidden animate-in fade-in duration-700">
+        <div className="w-full mt-4 space-y-6 animate-in fade-in duration-700">
             <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
+                <table className="w-full border-collapse text-left">
                     <thead>
-                        <tr className="bg-muted/30">
-                            <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-widest text-muted-foreground border-b">Question</th>
+                        <tr>
+                            <th className="py-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground w-1/3">Question</th>
                             {cols.map((col: any, i: number) => (
-                                <th key={i} className="px-4 py-4 text-center text-xs font-black uppercase tracking-widest text-muted-foreground border-b">
+                                <th key={i} className="px-2 py-4 text-center text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                     {col.label}
                                 </th>
                             ))}
@@ -30,12 +30,12 @@ export const MatrixNode = ({ msg, currentNodeId, responses, setResponses, handle
                     </thead>
                     <tbody>
                         {rows.map((row: any, ri: number) => (
-                            <tr key={ri} className="border-b last:border-0 hover:bg-muted/5 transition-colors">
-                                <td className="px-6 py-4 text-base font-bold text-foreground/80">{row.label}</td>
+                            <tr key={ri} className="group border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                                <td className="py-5 pr-4 text-base font-medium text-foreground">{row.label}</td>
                                 {cols.map((col: any, ci: number) => {
                                     const isSelected = currentResponse[row.value] === col.value;
                                     return (
-                                        <td key={ci} className="px-4 py-4 text-center">
+                                        <td key={ci} className="px-2 py-4 text-center">
                                             <button
                                                 disabled={!isActive}
                                                 onClick={() => {
@@ -43,12 +43,14 @@ export const MatrixNode = ({ msg, currentNodeId, responses, setResponses, handle
                                                     setResponses(prev => ({ ...prev, [msg.nodeId!]: newResponse }));
                                                 }}
                                                 className={cn(
-                                                    "w-10 h-10 rounded-full border-2 transition-all flex items-center justify-center mx-auto",
-                                                    isSelected ? "bg-primary border-primary text-primary-foreground shadow-lg scale-110" : "bg-white border-muted-foreground/20 hover:border-primary/50",
+                                                    "w-6 h-6 rounded-full border transition-all inline-flex items-center justify-center",
+                                                    isSelected
+                                                        ? "bg-primary border-primary text-primary-foreground scale-110"
+                                                        : "bg-card border-border hover:border-muted-foreground group-hover:bg-card",
                                                     !isActive && !isSelected && "opacity-30"
                                                 )}
                                             >
-                                                {isSelected && <IconCheck size={20} strokeWidth={3} />}
+                                                {isSelected && <div className="w-2 h-2 rounded-full bg-background" />}
                                             </button>
                                         </td>
                                     );
@@ -59,13 +61,13 @@ export const MatrixNode = ({ msg, currentNodeId, responses, setResponses, handle
                 </table>
             </div>
             {isActive && (
-                <div className="p-6 bg-muted/10 border-t flex justify-end">
+                <div className="flex justify-end pt-4">
                     <button
                         disabled={!allAnswered}
                         onClick={() => handleNext(currentResponse)}
-                        className="px-12 py-4 bg-primary text-primary-foreground rounded-2xl text-lg font-black shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+                        className="flex items-center gap-2 bg-primary text-primary-foreground px-8 py-3 rounded-full text-base font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-30 disabled:hover:translate-y-0"
                     >
-                        Save Ratings <IconArrowRight className="inline ml-2" />
+                        Save <IconArrowRight size={18} />
                     </button>
                 </div>
             )}
