@@ -22,7 +22,7 @@ const BranchNode = (props: NodeProps<any>) => {
             <Handle
                 type="target"
                 position={Position.Top}
-                className="w-3 h-3 !bg-muted-foreground border-2 border-background transform -translate-y-1"
+                className="w-3 h-3 bg-muted-foreground border-2 border-background transform -translate-y-1"
             />
 
             {/* Icon */}
@@ -33,7 +33,7 @@ const BranchNode = (props: NodeProps<any>) => {
                 type="source"
                 id="true"
                 position={Position.Right}
-                className="w-3 h-3 !bg-green-500 border-2 border-background transform translate-x-1"
+                className="w-3 h-3 bg-green-500 border-2 border-background transform translate-x-1"
             />
             {/* Label for True */}
             <div className="absolute -right-8 top-1/2 -translate-y-1/2 text-[10px] font-bold text-green-600 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
@@ -46,7 +46,7 @@ const BranchNode = (props: NodeProps<any>) => {
                 type="source"
                 id="false"
                 position={Position.Left}
-                className="w-3 h-3 !bg-red-500 border-2 border-background transform -translate-x-1"
+                className="w-3 h-3 bg-red-500 border-2 border-background transform -translate-x-1"
             />
             {/* Label for False */}
             <div className="absolute -left-9 top-1/2 -translate-y-1/2 text-[10px] font-bold text-red-500 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">

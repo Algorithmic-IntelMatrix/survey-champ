@@ -1,6 +1,6 @@
 "use client"
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import apiClient from '@/lib/api-client';
 import {
     ReactFlow,
@@ -36,31 +36,45 @@ const getId = () => generateUniqueId('node');
 // Wait, I can't easily inject the import if I target line 237. I should do import separately or use a larger chunk.
 // Let's do import first.
 
-// Helper function to generate runtime JSON
+// Helper function to generate runtime JSON (Compiler)
 const generateRuntimeJson = (nodes: ReactFlowNode[], edges: ReactFlowEdge[]) => {
     const runtimeJson: Record<string, any> = {};
 
     // Initialize nodes
     nodes.forEach(node => {
         runtimeJson[node.id] = {
-            userId: node.id, // Using node.id as unique identifier
+            id: node.id,
             type: node.type,
             data: node.data,
-            next: [] // To be filled by edges
+            next: node.type === 'branch'
+                ? { kind: 'branch', trueId: null, falseId: null }
+                : { kind: 'linear', nextId: null }
         };
     });
 
     // Populate edges (connections)
     edges.forEach(edge => {
-        if (runtimeJson[edge.source]) {
-            runtimeJson[edge.source].next.push(edge.target);
+        const sourceNode = runtimeJson[edge.source];
+        if (sourceNode) {
+            if (sourceNode.next.kind === 'branch') {
+                if (edge.sourceHandle === 'true') {
+                    sourceNode.next.trueId = edge.target;
+                } else if (edge.sourceHandle === 'false') {
+                    sourceNode.next.falseId = edge.target;
+                }
+            } else {
+                // Linear connection (take the first one found)
+                sourceNode.next.nextId = edge.target;
+            }
         }
     });
+
     return runtimeJson;
 };
 
 function SurveyFlow() {
     const params = useParams();
+    const router = useRouter();
     const surveyId = params?.id as string;
 
     // Initial nodes for testing (default, will be overwritten if data exists)
@@ -384,6 +398,15 @@ function SurveyFlow() {
                     {publishStatus === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
                 </button>
             </div>
+
+            <button
+                onClick={() => {
+                    window.open(`/surveyRunner/${surveyId}`, '_blank');
+                }}
+                className="px-4 py-2 bg-muted text-sm font-medium border border-border rounded-md shadow-sm hover:bg-muted/80 transition-colors ml-2"
+            >
+                Test Link
+            </button>
 
             {/* Right Sidebar: Properties Panel */}
             {selectedNodeId && nodes.find(n => n.id === selectedNodeId) && (
