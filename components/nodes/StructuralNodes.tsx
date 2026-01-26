@@ -19,7 +19,7 @@ export const StartNode = memo((props: NodeProps<any>) => {
             <Handle
                 type="source"
                 position={Position.Bottom}
-                className="w-3 h-3 !bg-green-600 border-2 border-white"
+                className="w-3 h-3 bg-green-600 border-2 border-white"
             />
         </div>
     );
@@ -43,11 +43,16 @@ export const EndNode = memo((props: NodeProps<any>) => {
             <Handle
                 type="target"
                 position={Position.Top}
-                className="w-3 h-3 !bg-red-700 border-2 border-white"
+                className="w-3 h-3 bg-red-700 border-2 border-white"
             />
 
             <IconForbid size={16} />
-            <span className="font-bold text-sm tracking-wide uppercase">End</span>
+            <div className="flex flex-col text-left leading-tight">
+                <span className="font-bold text-sm tracking-wide uppercase">End</span>
+                <span className="text-[10px] opacity-80 uppercase font-semibold">
+                    {data?.outcome?.replace(/_/g, ' ') || 'Completed'}
+                </span>
+            </div>
 
             {/* Simple delete button appearing on hover/selection for utility */}
             {selected && (

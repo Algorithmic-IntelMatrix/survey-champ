@@ -8,6 +8,7 @@ export interface Survey {
   createdAt: string;
   updatedAt: string;
   userId: string;
+  latestWorkflow?: { status: "DRAFT" | "PUBLISHED" | null };
 }
 
 export const surveyApi = {

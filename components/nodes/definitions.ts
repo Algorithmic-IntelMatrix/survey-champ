@@ -212,7 +212,21 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
         icon: IconForbid, 
         category: 'flow',
         properties: [
-            { name: 'message', label: 'Thank You Message', type: 'textarea', defaultValue: 'Thank you for completing the survey!' }
+            { name: 'message', label: 'Thank You Message', type: 'textarea', defaultValue: 'Thank you for completing the survey!' },
+            { name: 'redirectUrl', label: 'Redirect URL', type: 'text', placeholder: 'https://...' },
+            { 
+                name: 'outcome', 
+                label: 'Session Outcome', 
+                type: 'select', 
+                defaultValue: 'completed',
+                options: [
+                    { label: 'Completed', value: 'completed' },
+                    { label: 'Failed', value: 'failed' },
+                    { label: 'Over Quota', value: 'over_quota' },
+                    { label: 'Disqualified', value: 'disqualified' },
+                    { label: 'Quality Terminate', value: 'quality_terminate' }
+                ]
+            }
         ]
     },
 

@@ -1,26 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
     IconSearch,
     IconChevronDown,
     IconChevronRight,
-    IconTextCaption,
-    IconCheckbox,
-    IconListDetails,
-    IconPhoto,
-    IconNumbers,
-    IconMail,
-    IconCalendar,
-    IconStar,
-    IconArrowMerge,
-    IconForbid,
-    IconChevronLeft,
-    IconForms,
-    IconListCheck,
-    IconGitBranch,
     IconLayoutSidebarLeftCollapse,
-    IconLayoutSidebarRightCollapse
+    IconLayoutSidebarRightCollapse,
+    IconArrowLeft
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +26,7 @@ const nodeCategories = Object.keys(CATEGORY_CONFIG).map((catKey) => {
 }).filter(cat => cat.items.length > 0);
 
 export default function SurveyNodeSidebar() {
+    const router = useRouter();
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [hoveredItem, setHoveredItem] = useState<{ label: string, description: string, x: number, y: number } | null>(null);
@@ -74,23 +63,34 @@ export default function SurveyNodeSidebar() {
                 isCollapsed ? "w-20" : "w-64"
             )}
         >
-            {/* Header: Logo & Toggle */}
+            {/* Header: Back, Logo, Toggle */}
             <div className={cn(
                 "h-16 flex items-center border-b border-border shrink-0 transition-all duration-300",
-                isCollapsed ? "justify-center px-0" : "justify-between px-4"
+                isCollapsed ? "justify-center gap-2 flex-col-reverse py-2 h-auto" : "justify-between px-3"
             )}>
-                {/* Logo Area - Only visible when expanded */}
-                <div className={cn(
-                    "flex items-center gap-3 overflow-hidden transition-all duration-300",
-                    isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100"
-                )}>
-                    <div className="h-8 w-8 rounded-xl bg-primary flex items-center justify-center shadow-xs shrink-0 text-primary-foreground font-bold text-sm">
-                        SC
+                {/* Left Group: Back + Logo */}
+                <div className={cn("flex items-center gap-3", isCollapsed && "flex-col")}>
+                    <button
+                        onClick={() => router.push('/dashboard')}
+                        className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                        title="Back to Dashboard"
+                    >
+                        <IconArrowLeft size={20} />
+                    </button>
+
+                    {/* Logo area - hidden when collapsed */}
+                    <div className={cn(
+                        "flex items-center gap-3 overflow-hidden transition-all duration-300",
+                        isCollapsed ? "w-0 h-0 opacity-0 hidden" : "w-auto opacity-100"
+                    )}>
+                        <div className="h-8 w-8 rounded-xl bg-primary flex items-center justify-center shadow-xs shrink-0 text-primary-foreground font-bold text-sm">
+                            SC
+                        </div>
+                        <span className="font-bold text-lg tracking-tight whitespace-nowrap">Builder</span>
                     </div>
-                    <span className="font-bold text-lg tracking-tight whitespace-nowrap">Builder</span>
                 </div>
 
-                {/* Toggle Button - Always Visible */}
+                {/* Toggle Button */}
                 <button
                     onClick={() => setIsCollapsed(!isCollapsed)}
                     className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors focus:outline-hidden"

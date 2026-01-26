@@ -1,5 +1,7 @@
 "use client"
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useParams } from 'next/navigation';
+import apiClient from '@/lib/api-client';
 import {
     ReactFlow,
     applyNodeChanges,
@@ -11,25 +13,56 @@ import {
     type Edge as ReactFlowEdge,
     type OnNodesChange,
     type OnEdgesChange,
-    type OnConnect
-} from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-
-import {
+    type OnConnect,
     ReactFlowProvider,
     useReactFlow,
     type ReactFlowInstance
 } from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+
 import { nodeTypes, getNodeInitialData } from '@/components/nodes';
 import SurveyNodeSidebar from '@/components/SurveyNodeSidebar';
+import PropertiesPanel from '@/components/properties/PropertiesPanel';
+import { IconCloudUpload, IconCheck, IconAlertCircle, IconLoader2 } from '@tabler/icons-react';
+import { validateWorkflow } from '@/lib/validate-workflow';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
 
-import PropertiesPanel from '@/components/properties/PropertiesPanel';
+// ... (helper function remains same, not touching it if not needed, but replace_file_content needs start/end)
+// Wait, I can't easily inject the import if I target line 237. I should do import separately or use a larger chunk.
+// Let's do import first.
+
+// Helper function to generate runtime JSON
+const generateRuntimeJson = (nodes: ReactFlowNode[], edges: ReactFlowEdge[]) => {
+    const runtimeJson: Record<string, any> = {};
+
+    // Initialize nodes
+    nodes.forEach(node => {
+        runtimeJson[node.id] = {
+            userId: node.id, // Using node.id as unique identifier
+            type: node.type,
+            data: node.data,
+            next: [] // To be filled by edges
+        };
+    });
+
+    // Populate edges (connections)
+    edges.forEach(edge => {
+        if (runtimeJson[edge.source]) {
+            runtimeJson[edge.source].next.push(edge.target);
+        }
+    });
+    return runtimeJson;
+};
 
 function SurveyFlow() {
-    // Initial nodes for testing
+    const params = useParams();
+    const surveyId = params?.id as string;
+
+    // Initial nodes for testing (default, will be overwritten if data exists)
     const [nodes, setNodes] = useState<ReactFlowNode[]>([
         {
             id: 'start-1',
@@ -40,12 +73,177 @@ function SurveyFlow() {
     ]);
     const [edges, setEdges] = useState<ReactFlowEdge[]>([]);
 
+    // Autosave State
+    const [workflowId, setWorkflowId] = useState<string | null>(null);
+    const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+    const [publishStatus, setPublishStatus] = useState<'DRAFT' | 'PUBLISHED'>('DRAFT');
+    const isRemoteUpdate = useRef(false); // Flag to prevent autosave when loading data
+    const hasLoaded = useRef(false); // Flag to indicate initial data load is complete
+
     // Selection State
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
     // Use undefined as initial state for the instance
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | undefined>(undefined);
     const { screenToFlowPosition } = useReactFlow();
+
+    // 1. Fetch Latest Data on Mount
+    useEffect(() => {
+        async function loadLatest() {
+            if (!surveyId) return;
+            setSaveStatus('idle'); // Set status to idle while loading
+            try {
+                const { data } = await apiClient.get(`/workflows/${surveyId}/latest`);
+                const workflow = data.data; // Helper: backend returns { data: workflow }
+
+                if (workflow) {
+                    if (workflow.designJson) {
+                        const { nodes: loadedNodes, edges: loadedEdges, viewport } = workflow.designJson;
+
+                        isRemoteUpdate.current = true; // Prevent autosave from triggering immediately after load
+
+                        setNodes(loadedNodes || []);
+                        setEdges(loadedEdges || []);
+
+                        if (viewport && reactFlowInstance) {
+                            reactFlowInstance.setViewport(viewport);
+                        }
+                    }
+                    if (workflow.id) {
+                        setWorkflowId(workflow.id);
+                        setPublishStatus(workflow.status || 'DRAFT');
+                    }
+                }
+                setSaveStatus('saved'); // Data loaded successfully
+            } catch (err) {
+                console.error("Failed to load workflow", err);
+                setSaveStatus('error'); // Indicate error in loading
+            } finally {
+                hasLoaded.current = true;
+            }
+        }
+
+        loadLatest();
+    }, [surveyId, reactFlowInstance]); // reactFlowInstance dependency to ensure we can set viewport if needed
+
+    // 2. Autosave Effect
+    useEffect(() => {
+        // Skip if not loaded yet or if surveyId is not available
+        if (!hasLoaded.current || !surveyId) return;
+
+        // Skip if this change was caused by loading from remote
+        if (isRemoteUpdate.current) {
+            isRemoteUpdate.current = false;
+            return;
+        }
+
+        const autosave = async () => {
+            setSaveStatus('saving');
+
+            // 1. Generate Design JSON
+            const designJson = reactFlowInstance?.toObject();
+            if (!designJson) {
+                console.warn("ReactFlow instance not ready for designJson generation.");
+                setSaveStatus('error');
+                return;
+            }
+
+            // 2. Generate Runtime JSON (DAG)
+            const runtimeJson = generateRuntimeJson(nodes, edges);
+
+            const payload = {
+                surveyId,
+                designJson,
+                runtimeJson
+            };
+
+            try {
+                if (workflowId) {
+                    // Update existing
+                    await apiClient.patch(`/workflows/${workflowId}`, payload);
+                    setSaveStatus('saved');
+                } else {
+                    // Create new
+                    const res = await apiClient.post('/workflows', payload);
+                    if (res.data?.data?.id) {
+                        setWorkflowId(res.data.data.id);
+                    }
+                    setSaveStatus('saved');
+                }
+            } catch (error) {
+                console.error("Autosave failed", error);
+                setSaveStatus('error');
+                toast.error("Autosave failed.");
+            }
+        };
+
+        const timer = setTimeout(autosave, 2000); // 2s debounce
+        return () => clearTimeout(timer);
+
+    }, [nodes, edges, surveyId, workflowId, reactFlowInstance]);
+
+    const togglePublish = async () => {
+        if (!workflowId) {
+            toast.error("Please wait for draft to save first.");
+            return;
+        }
+
+        // UNPUBLISH LOGIC
+        if (publishStatus === 'PUBLISHED') {
+            try {
+                const promise = apiClient.patch(`/workflows/${workflowId}`, { status: 'DRAFT' });
+                toast.promise(promise, {
+                    loading: 'Unpublishing Survey...',
+                    success: () => {
+                        setPublishStatus('DRAFT');
+                        return 'Survey Unpublished. Now in Draft mode.';
+                    },
+                    error: 'Failed to unpublish survey'
+                });
+                await promise;
+            } catch (error) {
+                console.error(error);
+            }
+            return;
+        }
+
+        // 1. Validation
+        const { isValid, errors } = validateWorkflow(nodes, edges);
+
+        if (!isValid) {
+            toast.error("Cannot Publish", {
+                description: (
+                    <ul className="list-disc pl-4 mt-2 text-xs">
+                        {errors.slice(0, 5).map((e, i) => (
+                            <li key={i}>{e.message}</li>
+                        ))}
+                        {errors.length > 5 && <li>...and {errors.length - 5} more</li>}
+                    </ul>
+                ),
+                duration: 5000
+            });
+            return;
+        }
+
+        try {
+            const promise = apiClient.patch(`/workflows/${workflowId}`, { status: 'PUBLISHED' });
+
+            toast.promise(promise, {
+                loading: 'Publishing Survey...',
+                success: () => {
+                    setPublishStatus('PUBLISHED');
+                    return 'Survey Published Successfully!';
+                },
+                error: 'Failed to publish survey'
+            });
+
+            await promise;
+
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
 
     const onNodesChange: OnNodesChange = useCallback(
         (changes) => setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot) as ReactFlowNode[]),
@@ -89,9 +287,11 @@ function SurveyFlow() {
                 y: event.clientY,
             });
 
+            // Handle ID collision if loading from server - simple check or use UUIDs
+            // For now using simple increment but checking existence might be better or using big random
             const newNode: ReactFlowNode = {
                 id: getId(),
-                type, // 'textInput', 'multipleChoice', etc. (You will need custom node components for these eventually)
+                type,
                 position,
                 data: { label: label || `${type} node` },
             };
@@ -125,39 +325,65 @@ function SurveyFlow() {
                 </ReactFlow>
             </div>
 
-            <div className="absolute top-4 right-4 z-50 flex gap-2">
+            {/* Top Right Controls & Status */}
+            <div className="absolute top-4 right-4 z-50 flex items-center gap-3">
+
+                {/* Live Status Badge */}
+                {publishStatus === 'PUBLISHED' && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 backdrop-blur-sm rounded-full shadow-sm">
+                        <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                        </span>
+                        <span className="text-green-600 font-bold text-xs tracking-wide">LIVE</span>
+                    </div>
+                )}
+
+                {/* Save Status Indicator - Only showed during activity or error */}
+                {(saveStatus === 'saving' || saveStatus === 'saved' || saveStatus === 'error') && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-background/80 backdrop-blur-sm border border-border rounded-full shadow-sm text-xs font-medium transition-all">
+                        {saveStatus === 'saving' && (
+                            <>
+                                <IconLoader2 className="animate-spin text-primary" size={14} />
+                                <span className="text-muted-foreground">Saving...</span>
+                            </>
+                        )}
+                        {saveStatus === 'saved' && (
+                            <>
+                                <IconCheck className="text-green-500" size={14} />
+                                <span className="text-foreground">Saved</span>
+                            </>
+                        )}
+                        {saveStatus === 'error' && (
+                            <>
+                                <IconAlertCircle className="text-destructive" size={14} />
+                                <span className="text-destructive">Save Failed</span>
+                            </>
+                        )}
+                    </div>
+                )}
+
                 <button
                     onClick={() => {
-                        // 1. Create Adjacency List
-                        const graph: Record<string, any> = {};
-
-                        // Initialize nodes
-                        nodes.forEach(node => {
-                            graph[node.id] = {
-                                type: node.type,
-                                data: node.data,
-                                next: []
-                            };
-                        });
-
-                        // Populate edges (connections)
-                        edges.forEach(edge => {
-                            if (graph[edge.source]) {
-                                graph[edge.source].next.push(edge.target);
-                            }
-                        });
-
-                        console.log("SURVEY_JUMP_LOGIC_DAG:", JSON.stringify(graph, null, 2));
-                        alert("Draft Saved! Check Console for DAG.");
+                        toast.success("Design autosaved successfully.");
                     }}
-                    className="px-4 py-2 bg-white text-sm font-medium border border-border rounded-md shadow-sm hover:bg-muted transition-colors"
+                    className="px-4 py-2 bg-white text-sm font-medium border border-border rounded-md shadow-sm hover:bg-muted transition-colors opacity-70 hover:opacity-100"
                 >
                     Save Draft
                 </button>
-                <button className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md shadow-md hover:bg-primary/90 transition-colors">
-                    Publish
+                <button
+                    onClick={togglePublish}
+                    className={cn(
+                        "px-4 py-2 text-sm font-medium rounded-md shadow-md transition-colors",
+                        publishStatus === 'PUBLISHED'
+                            ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            : "bg-primary text-primary-foreground hover:bg-primary/90"
+                    )}
+                >
+                    {publishStatus === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
                 </button>
             </div>
+
             {/* Right Sidebar: Properties Panel */}
             {selectedNodeId && nodes.find(n => n.id === selectedNodeId) && (
                 <PropertiesPanel

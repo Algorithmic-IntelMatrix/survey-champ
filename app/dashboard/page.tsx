@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { surveyApi, Survey } from "@/api/survey";
 import { toast } from "sonner";
-import { IconPlus, IconLogout, IconClipboardList, IconChevronRight } from "@tabler/icons-react";
+import { IconPlus, IconLogout, IconClipboardList, IconChevronRight, IconEdit, IconTrash } from "@tabler/icons-react";
 import NewSurveyModal from "@/components/SurveyModal";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -119,29 +119,62 @@ export default function Dashboard() {
                                         <div className="p-2 bg-primary/10 rounded-lg text-primary">
                                             <IconClipboardList size={24} />
                                         </div>
-                                        <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-md">
-                                            {new Date(survey.createdAt).toLocaleDateString()}
-                                        </span>
+
+                                        {/* Status Badge */}
+                                        {survey.latestWorkflow?.status === 'PUBLISHED' ? (
+                                            <span className="px-2.5 py-1 bg-green-500/10 text-green-600 text-[10px] font-bold uppercase tracking-wider rounded-full border border-green-500/20 shadow-sm flex items-center gap-1.5">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                                Live
+                                            </span>
+                                        ) : (
+                                            <span className="px-2.5 py-1 bg-zinc-100 text-zinc-500 text-[10px] font-bold uppercase tracking-wider rounded-full border border-zinc-200">
+                                                Draft
+                                            </span>
+                                        )}
                                     </div>
 
                                     <h3 className="text-xl font-bold text-card-foreground mb-2 group-hover:text-primary transition-colors">
                                         {survey.name}
                                     </h3>
 
-                                    <p className="text-muted-foreground text-sm line-clamp-2 mb-6">
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
+                                        <span>{new Date(survey.createdAt).toLocaleDateString()}</span>
+                                        <span>•</span>
+                                        <span>{survey.client}</span>
+                                    </div>
+
+                                    <p className="text-muted-foreground text-sm line-clamp-2 mb-6 h-10">
                                         {survey.description || "No description provided"}
                                     </p>
 
                                     <div className="flex items-center justify-between mt-auto pt-4 border-t border-border">
-                                        <span className="text-xs text-muted-foreground font-medium">
-                                            Client: {survey.client}
-                                        </span>
-                                        <button
-                                            onClick={() => router.push(`/dashboard/surveys/${survey.id}`)}
-                                            className="flex items-center gap-1 text-sm font-semibold text-foreground/70 hover:text-foreground transition-colors"
-                                        >
-                                            Details <IconChevronRight size={16} />
-                                        </button>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => router.push(`/dashboard/surveys/${survey.id}`)}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/5 text-primary text-xs font-semibold rounded-md hover:bg-primary/10 transition-colors"
+                                            >
+                                                <IconEdit size={14} />
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={async (e) => {
+                                                    e.stopPropagation();
+                                                    if (confirm("Are you sure you want to delete this survey?")) {
+                                                        try {
+                                                            await surveyApi.deleteSurvey(survey.id);
+                                                            toast.success("Survey deleted");
+                                                            fetchSurveys();
+                                                        } catch (err) {
+                                                            toast.error("Failed to delete");
+                                                        }
+                                                    }
+                                                }}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 text-xs font-semibold rounded-md hover:bg-red-100 transition-colors"
+                                            >
+                                                <IconTrash size={14} />
+                                                Delete
+                                            </button>
+                                        </div>
                                     </div>
                                 </motion.div>
                             ))}
