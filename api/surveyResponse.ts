@@ -25,5 +25,20 @@ export const surveyResponseApi = {
         const { id, ...data } = params;
         const response = await apiClient.put(`/survey/response/${id}`, data)
         return response.data
+    },
+
+    getMetrics: async (surveyId: string) => {
+        const response = await apiClient.get(`/survey/response/metrics/${surveyId}`);
+        return response.data.data;
+    },
+
+    getResponses: async (surveyId: string) => {
+        const response = await apiClient.get(`/survey/response/responses/${surveyId}`);
+        return response.data.data;
+    },
+
+    getAllUserResponses: async () => {
+        const response = await apiClient.get('/survey/response/all');
+        return response.data.data;
     }
 }

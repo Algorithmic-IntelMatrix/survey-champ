@@ -12,7 +12,6 @@ export default function Dashboard() {
     const router = useRouter();
     const [surveys, setSurveys] = useState<Survey[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
         fetchSurveys();
@@ -30,56 +29,23 @@ export default function Dashboard() {
         }
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        router.replace("/");
-    };
 
     return (
-        <div className="min-h-screen bg-background text-foreground p-6 md:p-12 relative">
-            <NewSurveyModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSuccess={fetchSurveys}
-            />
-
-            {/* Header */}
-            <header className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+        <div className="p-8 md:p-12 relative">
+            {/* Page Title */}
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                 >
-                    <h1 className="text-4xl font-bold">
-                        Your Surveys
+                    <h1 className="text-4xl font-bold tracking-tight">
+                        My Surveys
                     </h1>
-                    <p className="mt-2 text-muted-foreground">
-                        Manage and monitor your active survey campaigns
+                    <p className="mt-2 text-muted-foreground font-medium">
+                        You have {surveys.length} active campaigns
                     </p>
                 </motion.div>
-
-                <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-4"
-                >
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground font-semibold rounded-full hover:opacity-90 transition-all duration-300 shadow-sm hover:scale-105 active:scale-95"
-                    >
-                        <IconPlus size={20} />
-                        Create Survey
-                    </button>
-
-                    <button
-                        onClick={handleLogout}
-                        className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-accent rounded-full transition-all"
-                        title="Logout"
-                    >
-                        <IconLogout size={22} />
-                    </button>
-                </motion.div>
-            </header>
+            </div>
 
             {/* Content */}
             <main className="max-w-7xl mx-auto">
@@ -157,6 +123,12 @@ export default function Dashboard() {
                                                 Edit
                                             </button>
                                             <button
+                                                onClick={() => router.push(`/dashboard/surveys/${survey.id}/metrics`)}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md hover:bg-blue-100 transition-colors"
+                                            >
+                                                Metrics
+                                            </button>
+                                            <button
                                                 onClick={async (e) => {
                                                     e.stopPropagation();
                                                     if (confirm("Are you sure you want to delete this survey?")) {
@@ -194,7 +166,7 @@ export default function Dashboard() {
                                 Get started by creating your first survey campaign to gather valuable insights.
                             </p>
                             <button
-                                onClick={() => setIsModalOpen(true)}
+                                // onClick={() => setIsModalOpen(true)}
                                 className="inline-flex items-center gap-2 px-6 py-2.5 bg-secondary text-secondary-foreground font-semibold rounded-full hover:bg-secondary/80 transition-all"
                             >
                                 <IconPlus size={20} />
