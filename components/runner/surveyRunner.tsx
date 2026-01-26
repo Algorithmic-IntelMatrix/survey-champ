@@ -2,6 +2,7 @@
 import { surveyWorkflowApi } from "@/api/surveyWorkflow"
 import { surveyResponseApi } from "@/api/surveyResponse"
 import { useEffect, useState, useMemo, useRef } from "react"
+import { useSearchParams } from "next/navigation"
 import { DAGReader } from "../properties/DagReader"
 import { IconArrowRight, IconRefresh, IconCheck, IconAlertCircle, IconTimeline, IconUser, IconRobot, IconSend, IconStar, IconCommand } from "@tabler/icons-react"
 import { cn } from "@/lib/utils"
@@ -33,6 +34,7 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
     const [inputValue, setInputValue] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [isTyping, setIsTyping] = useState(false);
+    const searchParams = useSearchParams();
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const reader = useMemo(() => workflow ? new DAGReader(workflow) : null, [workflow]);
@@ -69,7 +71,14 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
 
         // Start Response Session
         if (id) {
-            surveyResponseApi.startResponse({ surveyId: id, mode: mode || "TEST" })
+            const pid = searchParams.get('PID') || searchParams.get('pid');
+            const respondentId = pid || (Math.random().toString(36).substring(2) + Date.now().toString(36));
+
+            surveyResponseApi.startResponse({
+                surveyId: id,
+                mode: mode || "TEST",
+                respondentId
+            })
                 .then(res => setResponseId(res.id))
                 .catch(console.error)
         }
@@ -273,12 +282,7 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
                     <IconCommand size={20} />
                     <span className="text-sm font-semibold tracking-wide">Survey Champ</span>
                 </div>
-                <button
-                    onClick={handleReset}
-                    className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest"
-                >
-                    Start Over
-                </button>
+
             </header>
 
             {/* Main Conversation Flow */}
@@ -448,12 +452,14 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
                         </div>
                         <h2 className="text-3xl font-bold tracking-tight mb-3">All Done.</h2>
                         <p className="text-lg text-muted-foreground font-medium mb-10 leading-relaxed">Thank you for sharing your thoughts with us.</p>
-                        <button
-                            className="text-sm font-bold uppercase tracking-widest border-b-2 border-transparent hover:border-black transition-all pb-1"
-                            onClick={() => window.location.href = '/dashboard'}
-                        >
-                            Return to Dashboard
-                        </button>
+                        {mode !== 'LIVE' && (
+                            <button
+                                className="text-sm font-bold uppercase tracking-widest border-b-2 border-transparent hover:border-black transition-all pb-1"
+                                onClick={() => window.location.href = '/dashboard'}
+                            >
+                                Return to Dashboard
+                            </button>
+                        )}
                     </motion.div>
                 </div>
             )}

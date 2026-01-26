@@ -3,6 +3,7 @@ import apiClient from "@/lib/api-client"
 interface StartResponseParams {
     surveyId: string;
     mode?: string;
+    respondentId?: string;
 }
 
 interface UpdateResponseParams {

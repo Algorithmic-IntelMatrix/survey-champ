@@ -323,9 +323,15 @@ function SurveyFlow() {
         }
     };
 
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    const testLink = `${baseUrl}/surveyRunner/${surveyId}`;
-    const liveLink = `${baseUrl}/surveyRunner/${surveyId}`;
+    // Multi-domain architecture links
+    // In production, these should be configurable via env or settings
+    const surveyBaseUrl = 'http://survey.localhost:3000';
+
+    // Test/Draft link (uses the survey domain but keeps the /surveyRunner path for clarity)
+    const testLink = `${surveyBaseUrl}/surveyRunner/${surveyId}?mode=TEST`;
+
+    // Live link (uses the survey domain with the short path)
+    const liveLink = `${surveyBaseUrl}/${surveyId}`;
 
     return (
         <div className="flex w-full h-screen bg-background overflow-hidden relative">
