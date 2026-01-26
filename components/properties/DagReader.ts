@@ -88,9 +88,6 @@ export class DAGReader {
      * Evaluates a single logic rule against user responses.
      */
     private evaluateRule(rule: LogicRule, responses: Record<string, any>): boolean {
-        // Soft check for field existence in responses.
-        // If it's missing, it's likely a skipped question or we're probing a path
-        // that hasn't been reached yet. We return false instead of throwing.
         if (!(rule.field in responses)) {
             return false;
         }
@@ -110,12 +107,30 @@ export class DAGReader {
             targetValue = responses[rule.value];
         }
 
+        // --- NEW: Resilience Logic for Label vs Value mismatch ---
+        // If the referenced node is a choice/multi-choice, and the targetValue matches an option's LABEL,
+        // we should also allow it to match the option's VALUE.
+        const fieldNode = this.graph[rule.field];
+        if (fieldNode?.data?.options && typeof targetValue === 'string') {
+            const matchingOption = fieldNode.data.options.find((opt: any) => 
+                String(opt.label).toLowerCase() === String(targetValue).toLowerCase()
+            );
+            if (matchingOption) {
+                // If we found a matching option by label, we consider the value to be that option's value.
+                // This allows the designer to use "Cricket" in conditions while the runner stores "opt1".
+                targetValue = matchingOption.value;
+            }
+        }
+        // ---------------------------------------------------------
+
         const normStr = (v: any) => (v === undefined || v === null) ? '' : String(v).toLowerCase();
 
         switch (rule.operator) {
             case 'equals':
+                if (Array.isArray(value)) return value.some(v => normStr(v) === normStr(targetValue));
                 return normStr(value) === normStr(targetValue);
             case 'not_equals':
+                if (Array.isArray(value)) return !value.some(v => normStr(v) === normStr(targetValue));
                 return normStr(value) !== normStr(targetValue);
             case 'contains':
                 if (Array.isArray(value)) return value.some(v => normStr(v) === normStr(targetValue));

@@ -5,6 +5,12 @@ import { DAGReader } from "../properties/DagReader"
 import { IconArrowRight, IconRefresh, IconCheck, IconAlertCircle, IconTimeline, IconUser, IconRobot, IconSend, IconStar } from "@tabler/icons-react"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
+import { ChoiceNode } from "./nodes/ChoiceNode"
+import { RatingNode } from "./nodes/RatingNode"
+import { SliderNode } from "./nodes/SliderNode"
+import { MatrixNode } from "./nodes/MatrixNode"
+import { CascadingNode } from "./nodes/CascadingNode"
+import { StartNode, ZipCodeNode } from "./nodes/UtilityNodes"
 
 interface Message {
     id: string;
@@ -77,7 +83,41 @@ export const SurveyRunner = ({ id }: { id: string }) => {
 
         // 1. Add User Message if applicable
         if (currentNode.type !== 'start' && userValue !== undefined) {
-            addMessage('user', 'text', String(userValue), currentNodeId);
+            let displayValue = String(userValue);
+
+            // Resolve labels for choice-based nodes
+            if (currentNode.type === 'singleChoice' || currentNode.type === 'multipleChoice') {
+                const options = currentNode.data?.options || [];
+                if (Array.isArray(userValue)) {
+                    // Multiple Choice
+                    const labels = userValue.map(val => options.find((o: any) => o.value === val)?.label || val);
+                    displayValue = labels.join(", ");
+                } else {
+                    // Single Choice
+                    const option = options.find((o: any) => o.value === userValue);
+                    displayValue = option ? option.label : String(userValue);
+                }
+            } else if (currentNode.type === 'matrixChoice' && typeof userValue === 'object') {
+                // Format: "Row1: ColA, Row2: ColB"
+                const rows = currentNode.data?.rows || [];
+                const cols = currentNode.data?.columns || [];
+                displayValue = rows.map((r: any) => {
+                    const colVal = userValue[r.value];
+                    const colLabel = cols.find((c: any) => c.value === colVal)?.label || colVal;
+                    return `${r.label}: ${colLabel}`;
+                }).join(" | ");
+            } else if (currentNode.type === 'cascadingChoice' && Array.isArray(userValue)) {
+                // Resolve step labels
+                const steps = currentNode.data?.steps || [];
+                displayValue = userValue.map((val, i) => {
+                    const opt = steps[i]?.options?.find((o: any) => o.value === val);
+                    return opt ? opt.label : val;
+                }).join(" → ");
+            } else if (currentNode.type === 'rating') {
+                displayValue = `${userValue} Stars`;
+            }
+
+            addMessage('user', 'text', displayValue, currentNodeId);
         }
 
         // 2. Calculate Next Node
@@ -189,7 +229,7 @@ export const SurveyRunner = ({ id }: { id: string }) => {
                             )}
                         >
                             <div className={cn(
-                                "w-14 h-14 rounded-2xl flex-shrink-0 flex items-center justify-center shadow-md transform transition-all group-hover:scale-110",
+                                "w-14 h-14 rounded-2xl shrink-0 flex items-center justify-center shadow-md transform transition-all group-hover:scale-110",
                                 msg.role === 'user'
                                     ? "bg-primary text-primary-foreground -rotate-3"
                                     : "bg-white border text-muted-foreground rotate-3"
@@ -213,157 +253,62 @@ export const SurveyRunner = ({ id }: { id: string }) => {
                                 {/* Specialized UI for current question */}
                                 {msg.role === 'assistant' && !isEnd && (
                                     <div className="w-full pt-4 animate-in fade-in slide-in-from-top-4 duration-500">
-                                        {msg.type === 'singleChoice' && msg.options && (
-                                            <div className="flex flex-wrap gap-6">
-                                                {msg.options.map((opt, i) => (
-                                                    <button
-                                                        key={i}
-                                                        disabled={msg.nodeId !== currentNodeId}
-                                                        onClick={() => handleNext(opt.value)}
-                                                        className={cn(
-                                                            "px-14 py-7 rounded-[2rem] border-2 transition-all text-xl font-bold shadow-lg",
-                                                            msg.nodeId === currentNodeId
-                                                                ? "bg-white hover:bg-primary/5 hover:border-primary hover:text-primary active:scale-95"
-                                                                : "bg-muted/40 text-muted-foreground border-transparent opacity-60"
-                                                        )}
-                                                    >
-                                                        {opt.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        {msg.type === 'multipleChoice' && msg.options && (
-                                            <div className="space-y-8 w-full">
-                                                <div className="flex flex-wrap gap-6">
-                                                    {msg.options.map((opt, i) => {
-                                                        const currentValues = Array.isArray(responses[msg.nodeId!]) ? responses[msg.nodeId!] : [];
-                                                        const isSelected = currentValues.includes(opt.value);
-                                                        const isActive = msg.nodeId === currentNodeId;
-                                                        return (
-                                                            <button
-                                                                key={i}
-                                                                disabled={!isActive}
-                                                                onClick={() => {
-                                                                    const newValues = isSelected
-                                                                        ? currentValues.filter((v: string) => v !== opt.value)
-                                                                        : [...currentValues, opt.value];
-                                                                    setResponses(prev => ({ ...prev, [msg.nodeId!]: newValues }));
-                                                                }}
-                                                                className={cn(
-                                                                    "px-14 py-7 rounded-[2rem] border-2 transition-all text-xl font-bold shadow-lg flex items-center gap-4",
-                                                                    isSelected
-                                                                        ? "bg-primary text-primary-foreground border-primary scale-[1.02]"
-                                                                        : "bg-white border-border hover:border-primary",
-                                                                    !isActive && !isSelected && "bg-muted/40 text-muted-foreground border-transparent opacity-60"
-                                                                )}
-                                                            >
-                                                                <div className={cn(
-                                                                    "w-6 h-6 border-2 rounded-md flex items-center justify-center transition-all",
-                                                                    isSelected ? "bg-white border-white text-primary" : "bg-muted border-muted-foreground/20"
-                                                                )}>
-                                                                    {isSelected && <IconCheck size={18} strokeWidth={4} />}
-                                                                </div>
-                                                                {opt.label}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                                {msg.nodeId === currentNodeId && (
-                                                    <button
-                                                        disabled={!responses[currentNodeId!] || responses[currentNodeId!].length === 0}
-                                                        onClick={() => handleNext(responses[currentNodeId!])}
-                                                        className="flex items-center gap-4 bg-primary text-primary-foreground px-16 py-7 rounded-[2.5rem] text-xl font-black shadow-2xl shadow-primary/30 hover:scale-[1.05] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
-                                                    >
-                                                        Continue Journey <IconArrowRight size={24} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {msg.type === 'rating' && (
-                                            <div className="flex flex-col gap-6 items-start bg-white p-10 rounded-[3rem] border shadow-md">
-                                                <div className="flex gap-4">
-                                                    {Array.from({ length: workflow[msg.nodeId!]?.data?.maxRating || 5 }).map((_, i) => (
-                                                        <button
-                                                            key={i}
-                                                            disabled={msg.nodeId !== currentNodeId}
-                                                            onMouseEnter={() => msg.nodeId === currentNodeId && setInputValue(String(i + 1))}
-                                                            onMouseLeave={() => msg.nodeId === currentNodeId && setInputValue("")}
-                                                            onClick={() => handleNext(i + 1)}
-                                                            className={cn(
-                                                                "transition-all duration-300",
-                                                                msg.nodeId === currentNodeId ? "hover:scale-150 group/star" : "cursor-default"
-                                                            )}
-                                                        >
-                                                            <IconStar
-                                                                size={56}
-                                                                strokeWidth={1.5}
-                                                                className={cn(
-                                                                    "transition-all duration-300",
-                                                                    (responses[msg.nodeId!] || (msg.nodeId === currentNodeId ? Number(inputValue) : 0)) > i
-                                                                        ? "text-yellow-400 fill-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.6)]"
-                                                                        : "text-muted-foreground/20"
-                                                                )}
-                                                            />
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                                {msg.nodeId === currentNodeId && (
-                                                    <p className="text-sm text-muted-foreground font-black uppercase tracking-[0.2em] pl-2">
-                                                        Select your rating
-                                                    </p>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {msg.type === 'slider' && (
-                                            <div className="w-full max-w-2xl bg-white p-10 rounded-[3rem] border shadow-md space-y-8">
-                                                <div className="relative h-16 flex items-center">
-                                                    <input
-                                                        type="range"
-                                                        disabled={msg.nodeId !== currentNodeId}
-                                                        min={workflow[msg.nodeId!]?.data?.min || 0}
-                                                        max={workflow[msg.nodeId!]?.data?.max || 100}
-                                                        step={workflow[msg.nodeId!]?.data?.step || 1}
-                                                        className={cn(
-                                                            "w-full h-4 bg-muted rounded-full appearance-none accent-primary cursor-pointer transition-all",
-                                                            msg.nodeId !== currentNodeId && "cursor-default opacity-40"
-                                                        )}
-                                                        value={responses[msg.nodeId!] || (workflow[msg.nodeId!]?.data?.min || 0)}
-                                                        onChange={(e) => setResponses(prev => ({ ...prev, [msg.nodeId!]: Number(e.target.value) }))}
-                                                    />
-                                                </div>
-                                                <div className="flex justify-between items-center">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Current Value</span>
-                                                        <span className="font-black text-primary text-5xl tabular-nums">
-                                                            {responses[msg.nodeId!] || (workflow[msg.nodeId!]?.data?.min || 0)}
-                                                        </span>
-                                                    </div>
-                                                    {msg.nodeId === currentNodeId && (
-                                                        <button
-                                                            onClick={() => handleNext(responses[currentNodeId!] || (workflow[msg.nodeId!]?.data?.min || 0))}
-                                                            className="w-20 h-20 bg-primary text-primary-foreground rounded-[2rem] flex items-center justify-center shadow-2xl shadow-primary/30 hover:scale-[1.05] active:scale-95 transition-all"
-                                                        >
-                                                            <IconCheck size={36} strokeWidth={3} />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {msg.type === 'start' && msg.nodeId === currentNodeId && (
-                                            <button
-                                                onClick={() => handleNext('started')}
-                                                className="group relative px-16 py-8 bg-primary text-primary-foreground rounded-[2.5rem] text-2xl font-black shadow-[0_20px_50px_rgba(var(--primary),0.3)] transition-all hover:scale-[1.05] active:scale-95 overflow-hidden"
-                                            >
-                                                <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[0%] transition-transform duration-500" />
-                                                <span className="relative flex items-center gap-4">
-                                                    Let's Get Started <IconArrowRight size={28} strokeWidth={3} />
-                                                </span>
-                                            </button>
-                                        )}
+                                        <ChoiceNode
+                                            msg={msg}
+                                            currentNodeId={currentNodeId}
+                                            responses={responses}
+                                            setResponses={setResponses}
+                                            handleNext={handleNext}
+                                            workflow={workflow}
+                                        />
+                                        <RatingNode
+                                            msg={msg}
+                                            currentNodeId={currentNodeId}
+                                            responses={responses}
+                                            setResponses={setResponses}
+                                            handleNext={handleNext}
+                                            workflow={workflow}
+                                        />
+                                        <SliderNode
+                                            msg={msg}
+                                            currentNodeId={currentNodeId}
+                                            responses={responses}
+                                            setResponses={setResponses}
+                                            handleNext={handleNext}
+                                            workflow={workflow}
+                                        />
+                                        <MatrixNode
+                                            msg={msg}
+                                            currentNodeId={currentNodeId}
+                                            responses={responses}
+                                            setResponses={setResponses}
+                                            handleNext={handleNext}
+                                            workflow={workflow}
+                                        />
+                                        <CascadingNode
+                                            msg={msg}
+                                            currentNodeId={currentNodeId}
+                                            responses={responses}
+                                            setResponses={setResponses}
+                                            handleNext={handleNext}
+                                            workflow={workflow}
+                                        />
+                                        <ZipCodeNode
+                                            msg={msg}
+                                            currentNodeId={currentNodeId}
+                                            responses={responses}
+                                            setResponses={setResponses}
+                                            handleNext={handleNext}
+                                            workflow={workflow}
+                                        />
+                                        <StartNode
+                                            msg={msg}
+                                            currentNodeId={currentNodeId}
+                                            responses={responses}
+                                            setResponses={setResponses}
+                                            handleNext={handleNext}
+                                            workflow={workflow}
+                                        />
                                     </div>
                                 )}
                             </div>
@@ -394,7 +339,7 @@ export const SurveyRunner = ({ id }: { id: string }) => {
 
             {/* Floating Action Input */}
             <AnimatePresence>
-                {!isEnd && currentNode && currentNode.type !== 'start' && currentNode.type !== 'singleChoice' && (
+                {!isEnd && currentNode && (currentNode.type === 'textInput' || currentNode.type === 'zipCodeInput') && (
                     <motion.div
                         initial={{ y: 100, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
@@ -405,7 +350,7 @@ export const SurveyRunner = ({ id }: { id: string }) => {
                             <input
                                 autoFocus
                                 type="text"
-                                placeholder="Type your answer here..."
+                                placeholder={currentNode.type === 'zipCodeInput' ? "Enter Zip Code..." : "Type your answer here..."}
                                 className="w-full bg-white/80 backdrop-blur-3xl border-2 border-white/50 rounded-[3rem] pl-10 pr-24 py-8 text-2xl font-medium focus:ring-8 focus:ring-primary/5 focus:border-primary outline-none transition-all shadow-2xl placeholder:text-muted-foreground/40"
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
