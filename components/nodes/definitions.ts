@@ -11,6 +11,7 @@ export interface PropertyField {
     helperText?: string;
     defaultValue?: any;
     options?: { label: string, value: string }[]; // For select type
+    onBulkAdd?: (options: { label: string, value: string }[]) => void;
 }
 
 export interface NodeDefinition {
@@ -118,6 +119,7 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
         properties: [
             ...commonProperties,
             { name: 'options', label: 'Options', type: 'options', defaultValue: [{ label: 'Option 1', value: 'opt1' }, { label: 'Option 2', value: 'opt2' }] },
+            { name: 'bulkOptions', label: 'Bulk Add (one per line)', type: 'textarea', placeholder: 'Option A\nOption B\nOption C...', helperText: 'Paste a list to replace all options above' },
             { name: 'allowOther', label: 'Allow "Other" Option', type: 'switch', defaultValue: false },
             { name: 'otherLabel', label: '"Other" Placeholder', type: 'text', defaultValue: 'Other (Please specify)', helperText: 'Label for the open-ended option' }
         ]
@@ -155,6 +157,8 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
         properties: [
             ...commonProperties,
             { name: 'options', label: 'Options', type: 'options', defaultValue: [{ label: 'Option 1', value: 'opt1' }, { label: 'Option 2', value: 'opt2' }] },
+            { name: 'bulkOptions', label: 'Bulk Add (one per line)', type: 'textarea', placeholder: 'Option A\nOption B\nOption C...', helperText: 'Paste a list to replace all options above' },
+            { name: 'maxChoices', label: 'Maximum Choices', type: 'number', helperText: 'Limit how many options a user can select. Leave empty for no limit.', defaultValue: 0 },
             { name: 'allowOther', label: 'Allow "Other" Option', type: 'switch', defaultValue: false },
             { name: 'otherLabel', label: '"Other" Placeholder', type: 'text', defaultValue: 'Other (Please specify)' }
         ]
@@ -191,7 +195,9 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
         description: 'Entry point of the survey',
         icon: IconArrowMerge, // IconPlayerPlay
         category: 'flow',
-        properties: [] // No properties for Start usually
+        properties: [
+            { name: 'welcomeMessage', label: 'Welcome Message', type: 'textarea', placeholder: 'e.g., Welcome to our survey! Click below to start.', defaultValue: 'Welcome! Please click the button below to start the survey.' }
+        ] // No properties for Start usually
     },
 
     // Logic
@@ -221,10 +227,9 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
                 defaultValue: 'completed',
                 options: [
                     { label: 'Completed', value: 'completed' },
-                    { label: 'Failed', value: 'failed' },
-                    { label: 'Over Quota', value: 'over_quota' },
                     { label: 'Disqualified', value: 'disqualified' },
-                    { label: 'Quality Terminate', value: 'quality_terminate' }
+                    { label: 'Quality Terminate', value: 'quality_terminate' },
+                    { label: 'Security Terminate', value: 'security_terminate' }
                 ]
             }
         ]

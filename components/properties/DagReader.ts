@@ -38,13 +38,16 @@ export class DAGReader {
 
     /**
      * Determines the next node in the flow based on current node and user responses.
+     * Respects skip logic (node-level conditions).
      */
-    getNextNode(currentNodeId: string, responses: Record<string, any>) {
+    getNextNode(currentNodeId: string, responses: Record<string, any>): any {
         const node = this.graph[currentNodeId];
         if (!node) return null;
 
         const next = node.next;
         if (!next) return null;
+
+        let potentialNextId: string | null = null;
 
         if (next.kind === 'branch') {
             const condition = node.data?.condition as LogicGroup;
@@ -52,13 +55,32 @@ export class DAGReader {
                 throw new Error(`Branch node ${currentNodeId} has no condition defined.`);
             }
             const isTrue = this.evaluateCondition(condition, responses);
-            const nextId = isTrue ? next.trueId : next.falseId;
-            return nextId ? this.graph[nextId] : null;
+            potentialNextId = isTrue ? next.trueId : next.falseId;
         } else {
             // Linear connection
-            const nextId = next.nextId;
-            return nextId ? this.graph[nextId] : null;
+            potentialNextId = next.nextId;
         }
+
+        if (!potentialNextId) return null;
+
+        // Check for Skip Logic on the destination node
+        const potentialNextNode = this.graph[potentialNextId];
+        if (potentialNextNode && potentialNextNode.data?.condition) {
+            try {
+                const isMet = this.evaluateCondition(potentialNextNode.data.condition, responses);
+                if (!isMet) {
+                    // Skip this node and move to ITS next node
+                    return this.getNextNode(potentialNextId, responses);
+                }
+            } catch (err) {
+                console.error(`Error evaluating skip logic for node ${potentialNextId}:`, err);
+                // If evaluation fails (e.g. missing question), we might choose to show it or stay safe.
+                // Usually, better to show it than stop the whole survey.
+                return potentialNextNode;
+            }
+        }
+
+        return potentialNextNode;
     }
 
     /**
@@ -94,6 +116,11 @@ export class DAGReader {
 
         let value = responses[rule.field];
 
+        // --- FIX: Extract raw answer if it's a rich response object ---
+        if (value && typeof value === 'object' && 'answer' in value) {
+            value = value.answer;
+        }
+
         // Handle subfield (e.g. for Matrix nodes)
         if (rule.subField && typeof value === 'object' && value !== null) {
             value = value[rule.subField];
@@ -105,28 +132,42 @@ export class DAGReader {
                 return false;
             }
             targetValue = responses[rule.value];
+            // Also extract .answer from variables if they are rich objects
+            if (targetValue && typeof targetValue === 'object' && 'answer' in targetValue) {
+                targetValue = targetValue.answer;
+            }
         }
 
         // --- NEW: Resilience Logic for Label vs Value mismatch ---
         // If the referenced node is a choice/multi-choice, and the targetValue matches an option's LABEL,
         // we should also allow it to match the option's VALUE.
         const fieldNode = this.graph[rule.field];
-        // Check both 'options' (Choice/Slider) and 'columns' (Matrix) for label-value matching
         const possibleOptions = fieldNode?.data?.options || fieldNode?.data?.columns;
         
-        if (possibleOptions && Array.isArray(possibleOptions) && typeof targetValue === 'string') {
-            const matchingOption = possibleOptions.find((opt: any) => 
-                String(opt.label).toLowerCase() === String(targetValue).toLowerCase()
-            );
-            if (matchingOption) {
-                // If we found a matching option by label, we consider the value to be that option's value.
-                // This allows the designer to use "Cricket" in conditions while the runner stores "opt1".
-                targetValue = matchingOption.value;
+        const norm = (v: any) => String(v || '').toLowerCase().replace(/[’‘]/g, "'").replace(/\s+/g, ' ').trim();
+
+        if (typeof targetValue === 'string') {
+            const nt = norm(targetValue);
+            
+            // 1. Check standard options
+            if (possibleOptions && Array.isArray(possibleOptions)) {
+                const matchingOption = possibleOptions.find((opt: any) => norm(opt.label) === nt);
+                if (matchingOption) targetValue = matchingOption.value;
             }
-        }   
+
+            // 2. Check "Other" option
+            if (fieldNode?.data?.allowOther && nt !== 'other') {
+                if (norm(fieldNode.data.otherLabel || 'Other') === nt) {
+                    targetValue = 'other';
+                }
+            }
+        }
         // ---------------------------------------------------------
 
-        const normStr = (v: any) => (v === undefined || v === null) ? '' : String(v).toLowerCase();
+        const normStr = (v: any) => {
+            if (v === undefined || v === null) return '';
+            return String(v).toLowerCase().replace(/[’‘]/g, "'").trim();
+        };
 
         switch (rule.operator) {
             case 'equals':
@@ -183,6 +224,15 @@ export class DAGReader {
         const visited = new Set<string>();
         let current = this.getStartNode();
 
+        // Check if start node itself has skip logic (unlikely but possible)
+        if (current && current.data?.condition) {
+            if (!this.evaluateCondition(current.data.condition, responses)) {
+                // If start is skipped, we need to find the REAL start
+                // But getNextNode depends on a current node. 
+                // In our system, 'start' is always the entry point.
+            }
+        }
+
         while (current) {
             if (visited.has(current.id)) {
                 throw new Error(`Cycle detected at node ${current.id} during runtime traversal.`);
@@ -192,7 +242,7 @@ export class DAGReader {
 
             if (current.type === 'end') break;
             
-            // In runtime JSON, the node has 'id'. getNextNode handles the lookup.
+            // This now uses the recursive/skip-logic-aware version
             const nextNode = this.getNextNode(current.id, responses);
             current = nextNode;
         }

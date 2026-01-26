@@ -1,7 +1,7 @@
 import React from "react";
 import { useReactFlow, Node } from "@xyflow/react";
 import { getNodeDefinition, PropertyField } from "@/components/nodes/definitions";
-import { IconX, IconFolderPlus } from "@tabler/icons-react";
+import { IconX, IconFolderPlus, IconTrash } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import { ConditionBuilder } from "./ConditionBuilder";
 import { StepsBuilder } from "./StepsBuilder";
@@ -49,7 +49,17 @@ export default function PropertiesPanel({ node, nodes, onChange, onClose }: Prop
                         <FieldRenderer
                             field={field}
                             value={node.data[field.name] ?? field.defaultValue}
-                            onChange={(val) => onChange(field.name, val)}
+                            onChange={(val) => {
+                                if (field.name === 'bulkOptions') {
+                                    // Special logic for bulk adding options
+                                    const lines = String(val).split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                                    if (lines.length > 0) {
+                                        const newOptions = lines.map((l, i) => ({ label: l, value: `opt${Date.now()}_${i}` }));
+                                        onChange('options', newOptions);
+                                    }
+                                }
+                                onChange(field.name, val);
+                            }}
                             nodes={nodes}
                         />
 
@@ -182,7 +192,15 @@ function FieldRenderer({ field, value, onChange, nodes }: { field: PropertyField
                                 className="flex-1 px-3 py-2 text-sm bg-background border border-input rounded-md"
                                 placeholder={`Option ${index + 1}`}
                             />
-                            {/* Simple delete for options could go here */}
+                            <button
+                                onClick={() => {
+                                    const newOptions = value.filter((_: any, i: number) => i !== index);
+                                    onChange(newOptions);
+                                }}
+                                className="p-2 text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                            >
+                                <IconTrash size={14} />
+                            </button>
                         </div>
                     ))}
                     <button

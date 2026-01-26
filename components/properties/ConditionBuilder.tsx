@@ -208,7 +208,13 @@ const RuleItem = ({ rule, onUpdate, onRemove, validQuestions }: {
             const steps = (selectedQuestion.data.steps as any[]) || [];
             questionOptions = steps.flatMap((s: any) => s.options || []);
         } else {
-            questionOptions = (selectedQuestion.data.options as any[]) || [];
+            questionOptions = [...((selectedQuestion.data.options as any[]) || [])];
+            if (selectedQuestion.data.allowOther) {
+                questionOptions.push({
+                    label: selectedQuestion.data.otherLabel || 'Other',
+                    value: 'other' // We will use 'other' as the value for the "Other" selection
+                });
+            }
         }
     }
 

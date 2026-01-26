@@ -16,18 +16,26 @@ export const ZipCodeNode = ({ msg, currentNodeId, workflow }: NodeProps) => {
     )
 }
 
-export const StartNode = ({ msg, currentNodeId, handleNext }: NodeProps) => {
+export const StartNode = ({ msg, currentNodeId, handleNext, workflow }: NodeProps) => {
     const isActive = msg.nodeId === currentNodeId;
+    const nodeData = workflow[msg.nodeId!]?.data || {};
 
     if (msg.type !== 'start' || !isActive) return null;
 
     return (
-        <button
-            onClick={() => handleNext('started')}
-            className="group mt-6 px-8 py-3 bg-primary text-primary-foreground rounded-full text-base font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center gap-3"
-        >
-            <span>Start Survey</span>
-            <IconArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
-        </button>
+        <div className="flex flex-col items-start gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {nodeData.welcomeMessage && (
+                <div className="text-lg text-foreground/80 leading-relaxed max-w-xl">
+                    {nodeData.welcomeMessage}
+                </div>
+            )}
+            <button
+                onClick={() => handleNext('started')}
+                className="group px-8 py-3 bg-primary text-primary-foreground rounded-full text-base font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center gap-3"
+            >
+                <span>Start Survey</span>
+                <IconArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
+            </button>
+        </div>
     )
 }

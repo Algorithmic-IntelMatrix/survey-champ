@@ -14,7 +14,14 @@ export const StartNode = memo((props: NodeProps<any>) => {
             selected ? "border-green-700 ring-4 ring-green-500/20 shadow-xl" : "border-green-600 hover:border-green-700"
         )}>
             <IconPlayerPlay size={16} fill="white" />
-            <span className="font-bold text-sm tracking-wide uppercase">Start</span>
+            <div className="flex flex-col text-left leading-tight">
+                <span className="font-bold text-sm tracking-wide uppercase">Start</span>
+                {props.data?.welcomeMessage && (
+                    <span className="text-[10px] opacity-80 font-medium truncate max-w-[100px]">
+                        {props.data.welcomeMessage}
+                    </span>
+                )}
+            </div>
 
             <Handle
                 type="source"

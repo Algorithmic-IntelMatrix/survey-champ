@@ -25,15 +25,26 @@ const ChoiceNode = (props: NodeProps<any>) => {
                     {description && (
                         <p className="text-xs text-muted-foreground">{description}</p>
                     )}
+                    {isMultiple && props.data.maxChoices > 0 && (
+                        <p className="text-[10px] text-primary font-medium italic">
+                            Max choices: {props.data.maxChoices}
+                        </p>
+                    )}
                 </div>
 
                 <div className="space-y-1.5">
-                    {(options as any[] || []).map((opt: any, i: number) => (
+                    {(options as any[] || []).slice(0, 3).map((opt: any, i: number) => (
                         <div key={i} className="flex items-center gap-2 p-2 rounded-md border border-border bg-background/50 text-xs">
                             <div className={`w-3 h-3 border border-muted-foreground ${isMultiple ? 'rounded-sm' : 'rounded-full'}`} />
-                            <span>{opt.label || `Option ${i + 1}`}</span>
+                            <span className="truncate">{opt.label || `Option ${i + 1}`}</span>
                         </div>
                     ))}
+
+                    {(options as any[] || []).length > 3 && (
+                        <div className="text-[10px] text-muted-foreground text-center py-1 bg-muted/20 rounded-md border border-dashed border-border">
+                            + {(options as any[] || []).length - 3} more options
+                        </div>
+                    )}
 
                     {props.data.allowOther && (
                         <div className="flex items-center gap-2 p-2 rounded-md border border-border border-dashed bg-background/30 text-xs text-muted-foreground">

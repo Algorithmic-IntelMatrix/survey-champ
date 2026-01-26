@@ -1,5 +1,6 @@
 "use client"
 import { surveyWorkflowApi } from "@/api/surveyWorkflow"
+import { surveyResponseApi } from "@/api/surveyResponse"
 import { useEffect, useState, useMemo, useRef } from "react"
 import { DAGReader } from "../properties/DagReader"
 import { IconArrowRight, IconRefresh, IconCheck, IconAlertCircle, IconTimeline, IconUser, IconRobot, IconSend, IconStar, IconCommand } from "@tabler/icons-react"
@@ -26,6 +27,7 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
     const [workflow, setWorkflow] = useState<any>(null);
     const [status, setStatus] = useState<string>('DRAFT');
     const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
+    const [responseId, setResponseId] = useState<string | null>(null);
     const [responses, setResponses] = useState<Record<string, any>>({});
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState("");
@@ -64,6 +66,13 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
                 setError("Failed to load workflow");
             }
         })()
+
+        // Start Response Session
+        if (id) {
+            surveyResponseApi.startResponse({ surveyId: id, mode: mode || "TEST" })
+                .then(res => setResponseId(res.id))
+                .catch(console.error)
+        }
     }, [id])
 
     const addMessage = (role: 'assistant' | 'user', type: string, content: string, nodeId?: string, options?: any[]) => {
@@ -92,12 +101,21 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
                 const options = currentNode.data?.options || [];
                 if (Array.isArray(userValue)) {
                     // Multiple Choice
-                    const labels = userValue.map(val => options.find((o: any) => o.value === val)?.label || val);
+                    const labels = userValue.map(val => {
+                        if (val === 'other') return currentNode.data?.otherLabel || 'Other';
+                        return options.find((o: any) => o.value === val)?.label || val;
+                    });
                     displayValue = labels.join(", ");
                 } else {
                     // Single Choice
                     const option = options.find((o: any) => o.value === userValue);
-                    displayValue = option ? option.label : String(userValue);
+                    if (option) {
+                        displayValue = option.label;
+                    } else if (userValue === 'other') {
+                        displayValue = currentNode.data?.otherLabel || 'Other';
+                    } else {
+                        displayValue = String(userValue);
+                    }
                 }
             } else if (currentNode.type === 'matrixChoice' && typeof userValue === 'object') {
                 // Format: "Row1: ColA, Row2: ColB"
@@ -150,7 +168,12 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
             if (nextNode) {
                 setCurrentNodeId(nextNode.id);
                 if (userValue !== undefined) {
-                    setResponses(prev => ({ ...prev, [currentNodeId]: userValue }));
+                    const responseEntry = {
+                        question: currentNode.data?.label || "Unknown Question",
+                        answer: userValue,
+                        type: currentNode.type
+                    };
+                    setResponses(prev => ({ ...prev, [currentNodeId]: responseEntry }));
                 }
 
                 // Add Assistant Message for next node
@@ -165,6 +188,49 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
                         nextNode.data?.options
                     );
                 }
+
+                // Sync with Backend
+                if (responseId) {
+                    const updatedResponses = userValue !== undefined ? {
+                        ...responses,
+                        [currentNodeId]: {
+                            question: currentNode.data?.label || "Unknown Question",
+                            answer: userValue,
+                            type: currentNode.type
+                        }
+                    } : responses;
+
+                    if (nextNode.type === 'end') {
+                        const sessionOutcome = nextNode.data?.outcome || "COMPLETED";
+                        // Map sessionOutcome to ResponseStatus
+                        let endStatus = "COMPLETED";
+                        const outcomeUpper = String(sessionOutcome).toUpperCase();
+                        if (outcomeUpper.includes("DISQUALIF")) endStatus = "DISQUALIFIED";
+                        else if (outcomeUpper.includes("QUALITY")) endStatus = "QUALITY_TERMINATE";
+                        else if (outcomeUpper.includes("SECURITY")) endStatus = "SECURITY_TERMINATE";
+                        else if (outcomeUpper.includes("FAIL")) endStatus = "FAILED";
+                        else if (outcomeUpper.includes("QUOTA")) endStatus = "OVER_QUOTA";
+                        else endStatus = "COMPLETED";
+
+                        surveyResponseApi.updateResponse({
+                            id: responseId,
+                            response: updatedResponses,
+                            status: endStatus,
+                            outcome: sessionOutcome,
+                            redirectUrl: nextNode.data?.redirectUrl
+                        }).then(res => {
+                            if (res.redirectUrl) {
+                                window.location.href = res.redirectUrl;
+                            }
+                        }).catch(console.error);
+                    } else {
+                        surveyResponseApi.updateResponse({
+                            id: responseId,
+                            response: updatedResponses
+                        }).catch(console.error);
+                    }
+                }
+
             } else if (currentNode.type !== 'end') {
                 setError("Flow stopped unexpectedly. Check your branching logic.");
             }
