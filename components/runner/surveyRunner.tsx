@@ -19,10 +19,12 @@ interface Message {
     content: string;
     nodeId?: string;
     options?: { label: string, value: string }[];
+    displayValue?: string; // For formatted rendering (e.g., "5 Stars")
 }
 
-export const SurveyRunner = ({ id }: { id: string }) => {
+export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
     const [workflow, setWorkflow] = useState<any>(null);
+    const [status, setStatus] = useState<string>('DRAFT');
     const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
     const [responses, setResponses] = useState<Record<string, any>>({});
     const [messages, setMessages] = useState<Message[]>([]);
@@ -115,6 +117,16 @@ export const SurveyRunner = ({ id }: { id: string }) => {
                 }).join(" → ");
             } else if (currentNode.type === 'rating') {
                 displayValue = `${userValue} Stars`;
+            }
+
+            // Zip Code Validation
+            if (currentNode.type === 'zipCodeInput') {
+                const zipPattern = /^\d{5,6}$/; // Basic 5-6 digit zip validation
+                if (!zipPattern.test(String(userValue).trim())) {
+                    setError("Please enter a valid 5 or 6 digit Zip Code.");
+                    setIsTyping(false);
+                    return;
+                }
             }
 
             addMessage('user', 'text', displayValue, currentNodeId);
@@ -337,7 +349,7 @@ export const SurveyRunner = ({ id }: { id: string }) => {
                         <div className="w-full max-w-2xl relative group">
                             <input
                                 autoFocus
-                                type="text"
+                                type={currentNode.type === 'zipCodeInput' ? "tel" : "text"}
                                 placeholder={currentNode.type === 'zipCodeInput' ? "Enter Zip Code..." : "Type your answer..."}
                                 className="w-full bg-transparent border-b border-border py-4 text-xl md:text-2xl font-medium focus:border-foreground outline-none transition-all placeholder:text-muted-foreground/30 rounded-none"
                                 value={inputValue}

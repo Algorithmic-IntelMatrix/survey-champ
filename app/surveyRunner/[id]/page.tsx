@@ -1,7 +1,8 @@
 import { SurveyRunner } from "@/components/runner/surveyRunner";
 
 
-export default async function SurveyRunnerPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function SurveyRunnerPage({ params, searchParams }: { params: Promise<{ id: string }>, searchParams: Promise<{ mode?: string }> }) {
     const { id } = await params;
-    return <SurveyRunner id={id} />
+    const { mode } = await searchParams;
+    return <SurveyRunner id={id} mode={mode} />
 }

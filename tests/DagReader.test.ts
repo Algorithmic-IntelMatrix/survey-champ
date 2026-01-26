@@ -111,8 +111,9 @@ describe("DAGReader", () => {
         expect(() => reader.getTakenPath({})).toThrow("Cycle detected");
     });
 
-    test("should throw error on missing variable in condition", () => {
+    test("should return false (end_fail) on missing variable in condition", () => {
         const reader = new DAGReader(mockGraph);
-        expect(() => reader.getNextNode("b_1", {})).toThrow("missing from responses");
+        const next = reader.getNextNode("b_1", {});
+        expect(next.id).toBe("end_fail");
     });
 });

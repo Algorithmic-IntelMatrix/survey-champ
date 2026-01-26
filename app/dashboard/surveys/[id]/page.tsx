@@ -23,7 +23,7 @@ import '@xyflow/react/dist/style.css';
 import { nodeTypes, getNodeInitialData } from '@/components/nodes';
 import SurveyNodeSidebar from '@/components/SurveyNodeSidebar';
 import PropertiesPanel from '@/components/properties/PropertiesPanel';
-import { IconCloudUpload, IconCheck, IconAlertCircle, IconLoader2 } from '@tabler/icons-react';
+import { IconCloudUpload, IconCheck, IconAlertCircle, IconLoader2, IconPlayerPlay, IconWorld, IconShare, IconCopy, IconX, IconExternalLink } from '@tabler/icons-react';
 import { validateWorkflow } from '@/lib/validate-workflow';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -31,10 +31,6 @@ import { generateUniqueId } from "@/lib/utils";
 
 // Helper to generate unique ID
 const getId = () => generateUniqueId('node');
-
-// ... (helper function remains same, not touching it if not needed, but replace_file_content needs start/end)
-// Wait, I can't easily inject the import if I target line 237. I should do import separately or use a larger chunk.
-// Let's do import first.
 
 // Helper function to generate runtime JSON (Compiler)
 const generateRuntimeJson = (nodes: ReactFlowNode[], edges: ReactFlowEdge[]) => {
@@ -97,6 +93,9 @@ function SurveyFlow() {
 
     // Selection State
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
+    // Share Modal State
+    const [isShareOpen, setIsShareOpen] = useState(false);
 
     // Use undefined as initial state for the instance
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | undefined>(undefined);
@@ -259,7 +258,6 @@ function SurveyFlow() {
         }
     };
 
-
     const onNodesChange: OnNodesChange = useCallback(
         (changes) => setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot) as ReactFlowNode[]),
         [],
@@ -317,8 +315,19 @@ function SurveyFlow() {
         [screenToFlowPosition],
     );
 
+    const copyToClipboard = (text: string) => {
+        if (typeof navigator !== 'undefined') {
+            navigator.clipboard.writeText(text);
+            toast.success("Link copied to clipboard");
+        }
+    };
+
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    const testLink = `${baseUrl}/surveyRunner/${surveyId}`;
+    const liveLink = `${baseUrl}/surveyRunner/${surveyId}`;
+
     return (
-        <div className="flex w-full h-screen bg-background overflow-hidden">
+        <div className="flex w-full h-screen bg-background overflow-hidden relative">
             <SurveyNodeSidebar />
 
             <div className="flex-1 h-full relative border-r border-border" onDragOver={onDragOver} onDrop={onDrop}>
@@ -341,22 +350,22 @@ function SurveyFlow() {
             </div>
 
             {/* Top Right Controls & Status */}
-            <div className="absolute top-4 right-4 z-50 flex items-center gap-3">
+            <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
 
                 {/* Live Status Badge */}
                 {publishStatus === 'PUBLISHED' && (
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 backdrop-blur-sm rounded-full shadow-sm">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-sm rounded-full shadow-sm mr-2">
                         <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                         </span>
-                        <span className="text-green-600 font-bold text-xs tracking-wide">LIVE</span>
+                        <span className="text-emerald-600 font-bold text-[10px] tracking-wider uppercase">Live</span>
                     </div>
                 )}
 
-                {/* Save Status Indicator - Only showed during activity or error */}
+                {/* Save Status Indicator */}
                 {(saveStatus === 'saving' || saveStatus === 'saved' || saveStatus === 'error') && (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-background/80 backdrop-blur-sm border border-border rounded-full shadow-sm text-xs font-medium transition-all">
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-background/80 backdrop-blur-sm border border-border rounded-full shadow-sm text-xs font-medium transition-all mr-2">
                         {saveStatus === 'saving' && (
                             <>
                                 <IconLoader2 className="animate-spin text-primary" size={14} />
@@ -365,7 +374,7 @@ function SurveyFlow() {
                         )}
                         {saveStatus === 'saved' && (
                             <>
-                                <IconCheck className="text-green-500" size={14} />
+                                <IconCheck className="text-emerald-500" size={14} />
                                 <span className="text-foreground">Saved</span>
                             </>
                         )}
@@ -378,20 +387,58 @@ function SurveyFlow() {
                     </div>
                 )}
 
+                {/* Action Buttons Group */}
+                <div className="flex items-center gap-1 bg-background/90 backdrop-blur-md border border-border/60 p-1 rounded-lg shadow-sm">
+                    {/* Share */}
+                    <button
+                        onClick={() => setIsShareOpen(true)}
+                        className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-all"
+                        title="Share Survey"
+                    >
+                        <IconShare size={18} />
+                    </button>
+
+                    <div className="w-px h-4 bg-border mx-1" />
+
+                    {/* Test Button */}
+                    <button
+                        onClick={() => window.open(testLink, '_blank')}
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted rounded-md transition-all"
+                    >
+                        <IconPlayerPlay size={16} className="text-blue-500" />
+                        Test
+                    </button>
+
+                    {/* Live Button (Conditional) */}
+                    {publishStatus === 'PUBLISHED' && (
+                        <button
+                            onClick={() => window.open(liveLink, '_blank')}
+                            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted rounded-md transition-all"
+                        >
+                            <IconWorld size={16} className="text-emerald-500" />
+                            Live
+                        </button>
+                    )}
+                </div>
+
+                <div className="w-px h-6 bg-border mx-2" />
+
                 <button
                     onClick={() => {
                         toast.success("Design autosaved successfully.");
                     }}
-                    className="px-4 py-2 bg-white text-sm font-medium border border-border rounded-md shadow-sm hover:bg-muted transition-colors opacity-70 hover:opacity-100"
+                    className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full transition-all"
+                    title="Save Draft"
                 >
-                    Save Draft
+                    <IconCloudUpload size={20} />
                 </button>
+
                 <button
                     onClick={togglePublish}
                     className={cn(
-                        "px-4 py-2 text-sm font-medium rounded-md shadow-md transition-colors",
+                        "px-4 py-2 text-xs font-bold uppercase tracking-wide rounded-full shadow-lg transition-all hover:-translate-y-0.5 active:translate-y-0",
                         publishStatus === 'PUBLISHED'
-                            ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            ? "bg-white text-destructive border border-destructive/20 hover:bg-red-50"
                             : "bg-primary text-primary-foreground hover:bg-primary/90"
                     )}
                 >
@@ -399,14 +446,106 @@ function SurveyFlow() {
                 </button>
             </div>
 
-            <button
-                onClick={() => {
-                    window.open(`/surveyRunner/${surveyId}`, '_blank');
-                }}
-                className="px-4 py-2 bg-muted text-sm font-medium border border-border rounded-md shadow-sm hover:bg-muted/80 transition-colors ml-2"
-            >
-                Test Link
-            </button>
+            {/* Share Dialog Overlay */}
+            {isShareOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div
+                        className="bg-background border border-border shadow-2xl rounded-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between px-6 py-5 border-b border-border bg-muted/30">
+                            <h3 className="font-semibold text-lg">Share Survey</h3>
+                            <button
+                                onClick={() => setIsShareOpen(false)}
+                                className="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                            >
+                                <IconX size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            {/* Test Link Section */}
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                                    <IconPlayerPlay size={14} /> Test Link (Draft)
+                                </label>
+                                <div className="flex gap-2">
+                                    <input
+                                        readOnly
+                                        value={testLink}
+                                        className="flex-1 bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                    />
+                                    <button
+                                        onClick={() => copyToClipboard(testLink)}
+                                        className="p-2 bg-background border border-border hover:bg-muted rounded-lg text-foreground transition-colors"
+                                        title="Copy Link"
+                                    >
+                                        <IconCopy size={18} />
+                                    </button>
+                                    <button
+                                        onClick={() => window.open(testLink, '_blank')}
+                                        className="p-2 bg-background border border-border hover:bg-muted rounded-lg text-foreground transition-colors"
+                                        title="Open in New Tab"
+                                    >
+                                        <IconExternalLink size={18} />
+                                    </button>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground">This link shows the latest draft version. Use for testing.</p>
+                            </div>
+
+                            {/* Separator */}
+                            <div className="h-px bg-border/50" />
+
+                            {/* Live Link Section */}
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold uppercase tracking-wider text-emerald-600 flex items-center gap-2">
+                                    <IconWorld size={14} /> Live Link (Public)
+                                </label>
+                                {publishStatus === 'PUBLISHED' ? (
+                                    <>
+                                        <div className="flex gap-2">
+                                            <input
+                                                readOnly
+                                                value={liveLink}
+                                                className="flex-1 bg-emerald-50/50 border border-emerald-200/50 rounded-lg px-3 py-2 text-sm text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                            />
+                                            <button
+                                                onClick={() => copyToClipboard(liveLink)}
+                                                className="p-2 bg-background border border-border hover:bg-muted rounded-lg text-foreground transition-colors"
+                                                title="Copy Link"
+                                            >
+                                                <IconCopy size={18} />
+                                            </button>
+                                            <button
+                                                onClick={() => window.open(liveLink, '_blank')}
+                                                className="p-2 bg-background border border-border hover:bg-muted rounded-lg text-foreground transition-colors"
+                                                title="Open in New Tab"
+                                            >
+                                                <IconExternalLink size={18} />
+                                            </button>
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground">This link shows the currently published version.</p>
+                                    </>
+                                ) : (
+                                    <div className="bg-muted/30 border border-dashed border-border rounded-lg p-4 text-center">
+                                        <p className="text-sm text-muted-foreground">Survey is not published yet.</p>
+                                        <p className="text-xs text-muted-foreground/60 mt-1">Publish only when you are ready to go live.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="p-4 bg-muted/30 border-t border-border flex justify-end">
+                            <button
+                                onClick={() => setIsShareOpen(false)}
+                                className="px-4 py-2 bg-white border border-border text-sm font-medium rounded-md shadow-sm hover:bg-gray-50 transition-colors"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Right Sidebar: Properties Panel */}
             {selectedNodeId && nodes.find(n => n.id === selectedNodeId) && (

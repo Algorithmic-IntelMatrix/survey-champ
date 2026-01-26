@@ -111,8 +111,11 @@ export class DAGReader {
         // If the referenced node is a choice/multi-choice, and the targetValue matches an option's LABEL,
         // we should also allow it to match the option's VALUE.
         const fieldNode = this.graph[rule.field];
-        if (fieldNode?.data?.options && typeof targetValue === 'string') {
-            const matchingOption = fieldNode.data.options.find((opt: any) => 
+        // Check both 'options' (Choice/Slider) and 'columns' (Matrix) for label-value matching
+        const possibleOptions = fieldNode?.data?.options || fieldNode?.data?.columns;
+        
+        if (possibleOptions && Array.isArray(possibleOptions) && typeof targetValue === 'string') {
+            const matchingOption = possibleOptions.find((opt: any) => 
                 String(opt.label).toLowerCase() === String(targetValue).toLowerCase()
             );
             if (matchingOption) {
@@ -120,7 +123,7 @@ export class DAGReader {
                 // This allows the designer to use "Cricket" in conditions while the runner stores "opt1".
                 targetValue = matchingOption.value;
             }
-        }
+        }   
         // ---------------------------------------------------------
 
         const normStr = (v: any) => (v === undefined || v === null) ? '' : String(v).toLowerCase();
