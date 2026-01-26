@@ -323,9 +323,8 @@ function SurveyFlow() {
         }
     };
 
-    // Multi-domain architecture links
-    // In production, these should be configurable via env or settings
-    const surveyBaseUrl = 'http://survey.localhost:3000';
+    // Multi-domain architecture links from environment variables
+    const surveyBaseUrl = process.env.NEXT_PUBLIC_SURVEY_URL || 'http://survey.localhost:3000';
 
     // Test/Draft link (uses the survey domain but keeps the /surveyRunner path for clarity)
     const testLink = `${surveyBaseUrl}/surveyRunner/${surveyId}?mode=TEST`;

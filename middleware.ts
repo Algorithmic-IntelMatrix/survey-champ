@@ -5,10 +5,13 @@ export function middleware(request: NextRequest) {
     const url = request.nextUrl;
     const hostname = request.headers.get('host') || '';
 
-    // Define your domains
-    // In production, these should come from environment variables
-    const APP_DOMAIN = 'localhost:3000'; 
-    const SURVEY_DOMAIN = 'survey.localhost:3000';
+    // Define your domains from environment variables
+    const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const SURVEY_URL = process.env.NEXT_PUBLIC_SURVEY_URL || 'http://survey.localhost:3000';
+    
+    // Extract domain from URL (remove proto and trailing slashes)
+    const APP_DOMAIN = APP_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    const SURVEY_DOMAIN = SURVEY_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
     // 1. Handle Survey Domain requests
     // If the hostname matches our survey domain (or starts with survey.)

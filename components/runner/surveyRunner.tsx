@@ -251,19 +251,6 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
         }
     };
 
-    const handleReset = () => {
-        if (reader) {
-            const startNode = reader.getStartNode();
-            setCurrentNodeId(startNode?.id || null);
-            setResponses({});
-            setMessages([]);
-            setError(null);
-            if (startNode) {
-                addMessage('assistant', 'start', startNode.data?.label || "Welcome to the survey!", startNode.id);
-            }
-        }
-    };
-
     if (error && !workflow) return <div className="p-10 text-destructive font-medium flex items-center gap-2"><IconAlertCircle size={20} />{error}</div>
     if (!workflow) return <div className="h-screen w-screen flex flex-col items-center justify-center gap-4 bg-[#f9fafb] text-muted-foreground">
         <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -278,9 +265,9 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
 
             {/* Navigation Header */}
             <header className="flex items-center justify-between px-8 py-6 bg-background/90 backdrop-blur-sm sticky top-0 z-50">
-                <div className="flex items-center gap-2 text-foreground/80">
-                    <IconCommand size={20} />
-                    <span className="text-sm font-semibold tracking-wide">Survey Champ</span>
+                <div className="flex items-center gap-3">
+                    <img src="/logo.jpg" alt="AIM" className="h-8 w-8 object-contain rounded-md shadow-xs" />
+                    <span className="text-sm font-bold tracking-tight text-foreground/90 uppercase">AIM</span>
                 </div>
 
             </header>

@@ -46,9 +46,10 @@ export default function LoginForm() {
 
   return (
     <div className="border border-border mx-auto w-full max-w-md rounded-none p-4 md:rounded-2xl md:p-8 bg-card text-card-foreground shadow-sm">
-      <h2 className="text-xl font-bold">
-        Welcome to AIM
-      </h2>
+      <div className="flex items-center gap-3 mb-4">
+        <img src="/logo.jpg" alt="AIM" className="h-10 w-10 object-contain rounded-xl shadow-xs" />
+        <h2 className="text-2xl font-bold">AIM</h2>
+      </div>
       <p className="mt-2 max-w-sm text-sm text-muted-foreground">
         Login to AIM if you can because we don&apos;t have a login flow
         Contact AIM for login credentials

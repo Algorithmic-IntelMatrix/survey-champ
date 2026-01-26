@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Survey Champ",
+  title: "AIM",
   description: "Survey Builder for AIM",
 };
 

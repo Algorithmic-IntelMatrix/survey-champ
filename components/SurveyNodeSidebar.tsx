@@ -83,8 +83,8 @@ export default function SurveyNodeSidebar() {
                         "flex items-center gap-3 overflow-hidden transition-all duration-300",
                         isCollapsed ? "w-0 h-0 opacity-0 hidden" : "w-auto opacity-100"
                     )}>
-                        <div className="h-8 w-8 rounded-xl bg-primary flex items-center justify-center shadow-xs shrink-0 text-primary-foreground font-bold text-sm">
-                            SC
+                        <div className="h-9 w-9 rounded-lg overflow-hidden shrink-0 shadow-sm border border-border/10">
+                            <img src="/logo.jpg" alt="AIM" className="h-full w-full object-contain" />
                         </div>
                         <span className="font-bold text-lg tracking-tight whitespace-nowrap">Builder</span>
                     </div>
