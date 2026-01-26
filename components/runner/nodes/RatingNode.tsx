@@ -30,7 +30,7 @@ export const RatingNode = ({ msg, currentNodeId, responses, handleNext, workflow
                         )}
                     >
                         <IconStar
-                            size={42}
+                            size={32}
                             strokeWidth={1}
                             className={cn(
                                 "transition-all duration-300",

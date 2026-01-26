@@ -35,14 +35,14 @@ export const SliderNode = ({ msg, currentNodeId, responses, setResponses, handle
             <div className="flex justify-between items-end border-b pb-4 border-border">
                 <div className="flex flex-col">
                     <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">Value</span>
-                    <span className="text-5xl font-light tracking-tighter tabular-nums text-foreground">{currentVal}</span>
+                    <span className="text-3xl font-light tracking-tighter tabular-nums text-foreground">{currentVal}</span>
                 </div>
                 {isActive && (
                     <button
                         onClick={() => handleNext(currentVal)}
-                        className="w-14 h-14 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg hover:bg-primary/90 active:scale-95 transition-all"
+                        className="w-12 h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg hover:bg-primary/90 active:scale-95 transition-all"
                     >
-                        <IconCheck size={24} strokeWidth={2} />
+                        <IconCheck size={20} strokeWidth={2} />
                     </button>
                 )}
             </div>

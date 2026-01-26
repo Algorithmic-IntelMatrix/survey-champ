@@ -31,7 +31,7 @@ export const MatrixNode = ({ msg, currentNodeId, responses, setResponses, handle
                     <tbody>
                         {rows.map((row: any, ri: number) => (
                             <tr key={ri} className="group border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-                                <td className="py-5 pr-4 text-base font-medium text-foreground">{row.label}</td>
+                                <td className="py-3 pr-4 text-base font-medium text-foreground">{row.label}</td>
                                 {cols.map((col: any, ci: number) => {
                                     const isSelected = currentResponse[row.value] === col.value;
                                     return (
@@ -65,7 +65,7 @@ export const MatrixNode = ({ msg, currentNodeId, responses, setResponses, handle
                     <button
                         disabled={!allAnswered}
                         onClick={() => handleNext(currentResponse)}
-                        className="flex items-center gap-2 bg-primary text-primary-foreground px-8 py-3 rounded-full text-base font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-30 disabled:hover:translate-y-0"
+                        className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-full text-sm font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-30 disabled:hover:translate-y-0"
                     >
                         Save <IconArrowRight size={18} />
                     </button>

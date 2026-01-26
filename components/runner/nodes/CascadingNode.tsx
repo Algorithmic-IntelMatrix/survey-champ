@@ -60,7 +60,7 @@ export const CascadingNode = ({ msg, currentNodeId, responses, setResponses, han
                 <div className="pt-4">
                     <button
                         onClick={() => handleNext(currentResponses)}
-                        className="flex items-center gap-2 bg-primary text-primary-foreground px-8 py-3 rounded-full text-base font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                        className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-full text-sm font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all"
                     >
                         Confirm <IconArrowRight size={18} />
                     </button>

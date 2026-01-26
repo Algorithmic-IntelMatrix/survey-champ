@@ -69,7 +69,7 @@ export const ChoiceNode = ({ msg, currentNodeId, responses, setResponses, handle
                         disabled={!isActive}
                         onClick={() => handleNext(opt.value)}
                         className={cn(
-                            "px-8 py-4 bg-card border border-border shadow-sm rounded-xl transition-all text-lg font-medium hover:shadow-md hover:border-primary/50 active:scale-95 text-left",
+                            "px-5 py-3 bg-card border border-border shadow-sm rounded-xl transition-all text-base font-medium hover:shadow-md hover:border-primary/50 active:scale-95 text-left",
                             !isActive && "opacity-60 cursor-default shadow-none bg-muted"
                         )}
                     >
@@ -83,7 +83,7 @@ export const ChoiceNode = ({ msg, currentNodeId, responses, setResponses, handle
                             setShowSpecify(true);
                         }}
                         className={cn(
-                            "px-8 py-4 bg-card border border-border border-dashed shadow-sm rounded-xl transition-all text-lg font-medium hover:shadow-md hover:border-primary/50 active:scale-95 text-left text-muted-foreground",
+                            "px-5 py-3 bg-card border border-border border-dashed shadow-sm rounded-xl transition-all text-base font-medium hover:shadow-md hover:border-primary/50 active:scale-95 text-left text-muted-foreground",
                             !isActive && "opacity-60 cursor-default shadow-none bg-muted"
                         )}
                     >
@@ -126,7 +126,7 @@ export const ChoiceNode = ({ msg, currentNodeId, responses, setResponses, handle
                                     setResponses(prev => ({ ...prev, [msg.nodeId!]: newValues }));
                                 }}
                                 className={cn(
-                                    "px-6 py-4 bg-card border shadow-sm rounded-xl transition-all text-lg font-medium flex items-center gap-3 text-left hover:shadow-md",
+                                    "px-5 py-3 bg-card border shadow-sm rounded-xl transition-all text-base font-medium flex items-center gap-3 text-left hover:shadow-md",
                                     isSelected
                                         ? "ring-2 ring-primary border-transparent shadow-md z-10"
                                         : "border-border hover:border-gray-300 text-foreground/80",
@@ -154,7 +154,7 @@ export const ChoiceNode = ({ msg, currentNodeId, responses, setResponses, handle
                                 setResponses(prev => ({ ...prev, [msg.nodeId!]: newValues }));
                             }}
                             className={cn(
-                                "px-6 py-4 bg-card border border-dashed shadow-sm rounded-xl transition-all text-lg font-medium flex items-center gap-3 text-left hover:shadow-md text-muted-foreground",
+                                "px-5 py-3 bg-card border border-dashed shadow-sm rounded-xl transition-all text-base font-medium flex items-center gap-3 text-left hover:shadow-md text-muted-foreground",
                                 isOtherSelected
                                     ? "ring-2 ring-primary border-transparent shadow-md z-10"
                                     : "border-border hover:border-gray-300",

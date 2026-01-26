@@ -39,10 +39,31 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
     const reader = useMemo(() => workflow ? new DAGReader(workflow) : null, [workflow]);
 
-    // Auto-scroll to bottom
+    // Auto-scroll to bottom or current question
     useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        if (!scrollRef.current) return;
+
+        if (isTyping) {
+            scrollRef.current.scrollTo({
+                top: scrollRef.current.scrollHeight,
+                behavior: 'smooth'
+            });
+            return;
+        }
+
+        const lastMessage = messages[messages.length - 1];
+        if (lastMessage?.role === 'assistant') {
+            const messageElements = scrollRef.current.querySelectorAll('[data-message-role="assistant"]');
+            const lastAssistantElement = messageElements[messageElements.length - 1];
+
+            if (lastAssistantElement) {
+                lastAssistantElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        } else {
+            scrollRef.current.scrollTo({
+                top: scrollRef.current.scrollHeight,
+                behavior: 'smooth'
+            });
         }
     }, [messages, isTyping]);
 
@@ -275,16 +296,17 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
             {/* Main Conversation Flow */}
             <main
                 ref={scrollRef}
-                className="flex-1 overflow-y-auto w-full max-w-3xl mx-auto px-6 py-12 space-y-6 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']"
+                className="flex-1 overflow-y-auto w-full max-w-5xl mx-auto px-6 py-12 space-y-6 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']"
             >
                 <AnimatePresence initial={false}>
                     {messages.map((msg) => (
                         <motion.div
                             key={msg.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
+                            data-message-role={msg.role}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
                             className={cn(
-                                "flex flex-col w-full",
+                                "flex flex-col w-full scroll-mt-28",
                                 msg.role === 'user' ? "items-end" : "items-start"
                             )}
                         >
@@ -403,7 +425,7 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
                         exit={{ y: 50, opacity: 0 }}
                         className="fixed bottom-0 left-0 w-full p-6 bg-linear-to-t from-background via-background/90 to-transparent z-50 flex justify-center"
                     >
-                        <div className="w-full max-w-2xl relative group">
+                        <div className="w-full max-w-3xl relative group">
                             <input
                                 autoFocus
                                 type={currentNode.type === 'zipCodeInput' ? "tel" : "text"}
