@@ -351,108 +351,108 @@ function SurveyFlow() {
                 </ReactFlow>
 
                 <NodeViewer nodes={nodes} onSelect={setSelectedNodeId} />
-            </div>
 
-            {/* Top Right Controls & Status */}
-            <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+                {/* Top Right Controls & Status */}
+                <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
 
-                {/* Live Status Badge */}
-                {publishStatus === 'PUBLISHED' && (
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-sm rounded-full shadow-sm mr-2">
-                        <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                        </span>
-                        <span className="text-emerald-600 font-bold text-[10px] tracking-wider uppercase">Live</span>
-                    </div>
-                )}
-
-                {/* Save Status Indicator */}
-                {(saveStatus === 'saving' || saveStatus === 'saved' || saveStatus === 'error') && (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-background/80 backdrop-blur-sm border border-border rounded-full shadow-sm text-xs font-medium transition-all mr-2">
-                        {saveStatus === 'saving' && (
-                            <>
-                                <IconLoader2 className="animate-spin text-primary" size={14} />
-                                <span className="text-muted-foreground">Saving...</span>
-                            </>
-                        )}
-                        {saveStatus === 'saved' && (
-                            <>
-                                <IconCheck className="text-emerald-500" size={14} />
-                                <span className="text-foreground">Saved</span>
-                            </>
-                        )}
-                        {saveStatus === 'error' && (
-                            <>
-                                <IconAlertCircle className="text-destructive" size={14} />
-                                <span className="text-destructive">Save Failed</span>
-                            </>
-                        )}
-                    </div>
-                )}
-
-                {/* Action Buttons Group */}
-                <div className="flex items-center gap-1 bg-background/90 backdrop-blur-md border border-border/60 p-1 rounded-lg shadow-sm">
-                    {/* Share */}
-                    <button
-                        onClick={() => setIsShareOpen(true)}
-                        className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-all"
-                        title="Share Survey"
-                    >
-                        <IconShare size={18} />
-                    </button>
-
-                    <div className="w-px h-4 bg-border mx-1" />
-
-                    {/* Test Button */}
-                    <button
-                        onClick={() => window.open(testLink, '_blank')}
-                        className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted rounded-md transition-all"
-                    >
-                        <IconPlayerPlay size={16} className="text-blue-500" />
-                        Test
-                    </button>
-
-                    {/* Live Button (Conditional) */}
+                    {/* Live Status Badge */}
                     {publishStatus === 'PUBLISHED' && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-sm rounded-full shadow-sm mr-2">
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                            <span className="text-emerald-600 font-bold text-[10px] tracking-wider uppercase">Live</span>
+                        </div>
+                    )}
+
+                    {/* Save Status Indicator */}
+                    {(saveStatus === 'saving' || saveStatus === 'saved' || saveStatus === 'error') && (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-background/80 backdrop-blur-sm border border-border rounded-full shadow-sm text-xs font-medium transition-all mr-2">
+                            {saveStatus === 'saving' && (
+                                <>
+                                    <IconLoader2 className="animate-spin text-primary" size={14} />
+                                    <span className="text-muted-foreground">Saving...</span>
+                                </>
+                            )}
+                            {saveStatus === 'saved' && (
+                                <>
+                                    <IconCheck className="text-emerald-500" size={14} />
+                                    <span className="text-foreground">Saved</span>
+                                </>
+                            )}
+                            {saveStatus === 'error' && (
+                                <>
+                                    <IconAlertCircle className="text-destructive" size={14} />
+                                    <span className="text-destructive">Save Failed</span>
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Action Buttons Group */}
+                    <div className="flex items-center gap-1 bg-background/90 backdrop-blur-md border border-border/60 p-1 rounded-lg shadow-sm">
+                        {/* Share */}
                         <button
-                            onClick={() => window.open(liveLink, '_blank')}
+                            onClick={() => setIsShareOpen(true)}
+                            className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-all"
+                            title="Share Survey"
+                        >
+                            <IconShare size={18} />
+                        </button>
+
+                        <div className="w-px h-4 bg-border mx-1" />
+
+                        {/* Test Button */}
+                        <button
+                            onClick={() => window.open(testLink, '_blank')}
                             className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted rounded-md transition-all"
                         >
-                            <IconWorld size={16} className="text-emerald-500" />
-                            Live
+                            <IconPlayerPlay size={16} className="text-blue-500" />
+                            Test
                         </button>
-                    )}
+
+                        {/* Live Button (Conditional) */}
+                        {publishStatus === 'PUBLISHED' && (
+                            <button
+                                onClick={() => window.open(liveLink, '_blank')}
+                                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted rounded-md transition-all"
+                            >
+                                <IconWorld size={16} className="text-emerald-500" />
+                                Live
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="w-px h-6 bg-border mx-2" />
+
+                    <button
+                        onClick={() => {
+                            toast.success("Design autosaved successfully.");
+                        }}
+                        className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full transition-all"
+                        title="Save Draft"
+                    >
+                        <IconCloudUpload size={20} />
+                    </button>
+
+                    <button
+                        onClick={togglePublish}
+                        className={cn(
+                            "px-4 py-2 text-xs font-bold uppercase tracking-wide rounded-full shadow-lg transition-all hover:-translate-y-0.5 active:translate-y-0",
+                            publishStatus === 'PUBLISHED'
+                                ? "bg-white text-destructive border border-destructive/20 hover:bg-red-50"
+                                : "bg-primary text-primary-foreground hover:bg-primary/90"
+                        )}
+                    >
+                        {publishStatus === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
+                    </button>
                 </div>
-
-                <div className="w-px h-6 bg-border mx-2" />
-
-                <button
-                    onClick={() => {
-                        toast.success("Design autosaved successfully.");
-                    }}
-                    className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full transition-all"
-                    title="Save Draft"
-                >
-                    <IconCloudUpload size={20} />
-                </button>
-
-                <button
-                    onClick={togglePublish}
-                    className={cn(
-                        "px-4 py-2 text-xs font-bold uppercase tracking-wide rounded-full shadow-lg transition-all hover:-translate-y-0.5 active:translate-y-0",
-                        publishStatus === 'PUBLISHED'
-                            ? "bg-white text-destructive border border-destructive/20 hover:bg-red-50"
-                            : "bg-primary text-primary-foreground hover:bg-primary/90"
-                    )}
-                >
-                    {publishStatus === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
-                </button>
             </div>
 
             {/* Share Dialog Overlay */}
             {isShareOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                     <div
                         className="bg-background border border-border shadow-2xl rounded-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"
                         onClick={(e) => e.stopPropagation()}

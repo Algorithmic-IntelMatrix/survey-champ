@@ -9,10 +9,23 @@ export default function NodeViewer({ nodes, onSelect }: { nodes: Node[], onSelec
     const [search, setSearch] = useState('');
     const [isOpen, setIsOpen] = useState(false);
 
+    // Sort nodes by their Y position to assign question numbers logically
+    const sortedNodes = [...nodes].sort((a, b) => a.position.y - b.position.y);
+
+    // Map of ID to Question Number (only for non-structural nodes)
+    const questionNumberMap = new Map<string, number>();
+    let qCount = 0;
+    sortedNodes.forEach(node => {
+        if (!['start', 'end', 'branch'].includes(node.type || '')) {
+            qCount++;
+            questionNumberMap.set(node.id, qCount);
+        }
+    });
+
     const filteredNodes = nodes.filter(n =>
         (n.data?.label as string || '').toLowerCase().includes(search.toLowerCase()) ||
         (n.type || '').toLowerCase().includes(search.toLowerCase())
-    );
+    ).sort((a, b) => a.position.y - b.position.y);
 
     const focusNode = (node: Node) => {
         setCenter(node.position.x + (node.measured?.width || 200) / 2, node.position.y + (node.measured?.height || 100) / 2, { zoom: 1, duration: 800 });
@@ -20,7 +33,7 @@ export default function NodeViewer({ nodes, onSelect }: { nodes: Node[], onSelec
     };
 
     return (
-        <div className="fixed bottom-20 left-4 z-50 flex flex-col items-start gap-2">
+        <div className="absolute bottom-10 right-4 z-50 flex flex-col items-start gap-2">
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={cn(
@@ -52,18 +65,20 @@ export default function NodeViewer({ nodes, onSelect }: { nodes: Node[], onSelec
                             filteredNodes.map(node => {
                                 const def = getNodeDefinition(node.type || '');
                                 const Icon = def?.icon || IconFocus2;
+                                const qNumber = questionNumberMap.get(node.id);
+
                                 return (
                                     <button
                                         key={node.id}
                                         onClick={() => focusNode(node)}
                                         className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-all group text-left"
                                     >
-                                        <div className="p-1.5 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                                        <div className="p-1.5 rounded-md bg-amber-100 text-amber-600 group-hover:bg-amber-500 group-hover:text-amber-50 group transition-colors">
                                             <Icon size={14} />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className="text-[11px] font-bold truncate leading-none mb-1 capitalize text-muted-foreground/60">
-                                                {node.type?.replace(/([A-Z])/g, ' $1')}
+                                            <div className="text-[10px] font-black truncate leading-none mb-1 uppercase text-muted-foreground/50 tracking-widest">
+                                                {qNumber ? `Q${qNumber} • ` : ''}{node.type?.replace(/([A-Z])/g, ' $1')}
                                             </div>
                                             <div className="text-[13px] font-medium truncate text-foreground leading-tight">
                                                 {node.data?.label as string || 'Untitled Node'}
