@@ -21,8 +21,9 @@ export const QuotaService = {
         tx: PrismaTx,
         surveyId: string,
         currentResponseId: string,
-        responseData: Record<string, any>
+        responseData: Record<string, any>,
     ) => {
+
         const survey = await tx.surveys.findUnique({
             where: { id: surveyId },
             include: { surveyQuotas: true }

@@ -50,16 +50,20 @@ export const surveyService = {
         return survey;
     },
 
-    updateSurvey : async (userId : string, surveyId : string, name? : string, description? : string) => {
+    updateSurvey : async (userId : string, surveyId : string, data: {
+        name? : string, 
+        description? : string,
+        redirectUrl? : string | null,
+        overQuotaUrl? : string | null,
+        securityTerminateUrl? : string | null,
+        globalQuota? : number | null
+    }) => {
         const survey = await prisma.surveys.updateMany({
             where : {
                 id: surveyId,
                 userId
             },
-            data : {
-                ...(name && { name }),
-                ...(description && { description })
-            }
+            data
         })
         return survey;
     },

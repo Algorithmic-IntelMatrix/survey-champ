@@ -33,7 +33,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/surveys", surveyRoutes);
 app.use("/api/workflows", surveyWorkflowRouter);
-app.use("/api/response", surveyResponseRoutes);
+app.use("/api/responses", surveyResponseRoutes);
 app.use("/api/storage", storageRouter);
 
 // Initialize Worker

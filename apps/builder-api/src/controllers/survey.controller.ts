@@ -67,12 +67,12 @@ export const surveyController = {
             }
 
             const {success, data, error} = updateSurveySchema.safeParse(req.body);
+            console.log("data", data)
             if (!success) {
                 return res.status(400).json({message: "Invalid request input", error: error.message});
             }
 
-            const {name, description} = data;
-            const result = await surveyService.updateSurvey(userId, surveyId, name, description);
+            const result = await surveyService.updateSurvey(userId, surveyId, data);
             
             if (result.count === 0) {
                 return res.status(404).json({message: "Survey not found or not owned by user"});

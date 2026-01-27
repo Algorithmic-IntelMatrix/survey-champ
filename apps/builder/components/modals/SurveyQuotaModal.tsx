@@ -36,12 +36,14 @@ export function SurveyQuotaModal({ isOpen, onClose, surveyId }: SurveyQuotaModal
     });
 
     useEffect(() => {
+        console.log("Survey Quota Modal useEffect called", isOpen, surveyId);
         if (isOpen && surveyId) {
             fetchData();
         }
     }, [isOpen, surveyId]);
 
     const fetchData = async () => {
+        console.log("Fetching data");
         setLoading(true);
         try {
             const [quotasData, workflowData] = await Promise.all([
@@ -72,6 +74,7 @@ export function SurveyQuotaModal({ isOpen, onClose, surveyId }: SurveyQuotaModal
     };
 
     const handleCreate = async () => {
+        console.log("Handle Create is being called")
         if (!newQuota.nodeId || !newQuota.value || !newQuota.limit) {
             toast.error("Please fill all fields");
             return;

@@ -53,6 +53,7 @@ export function SurveySettingsModal({ isOpen, onClose, surveyId }: SurveySetting
     const handleSave = async () => {
         setSaving(true);
         try {
+            console.log("Survey Settings Modal handleSave called", formData);
             await surveyApi.updateSurvey(surveyId, {
                 name: survey?.name || "", // Preserve existing name
                 description: survey?.description || "",
