@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+apps/builder/.next/
+apps/runner/.next/
+
 # production
 /build
 

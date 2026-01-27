@@ -1,5 +1,5 @@
 import { expect, test, describe } from "bun:test";
-import { DAGReader } from "@surveychamp/engine";
+import { DAGReader } from "../src/DagReader";
 
 describe("DAGReader", () => {
     const mockGraph = {

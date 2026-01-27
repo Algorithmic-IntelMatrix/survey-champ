@@ -1,8 +1,5 @@
 {
   "compilerOptions": {
-    "types": [
-      "bun-types"
-    ],
     "target": "ES2017",
     "lib": [
       "dom",
@@ -30,10 +27,10 @@
         "./*"
       ],
       "@surveychamp/engine": [
-        "./packages/engine/src/DagReader.ts"
+        "../../packages/engine/src/DagReader.ts"
       ],
       "@surveychamp/types": [
-        "./packages/types/src/survey.ts"
+        "../../packages/types/src/survey.ts"
       ]
     }
   },

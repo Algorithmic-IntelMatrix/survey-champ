@@ -328,13 +328,13 @@ function SurveyFlow() {
     };
 
     // Multi-domain architecture links from environment variables
-    const surveyBaseUrl = process.env.NEXT_PUBLIC_SURVEY_URL || 'http://survey.localhost:3000';
+    const surveyBaseUrl = process.env.NEXT_PUBLIC_SURVEY_URL || 'http://localhost:3001';
 
-    // Test/Draft link (uses the survey domain but keeps the /surveyRunner path for clarity)
-    const testLink = `${surveyBaseUrl}/surveyRunner/${surveyId}?mode=TEST`;
+    // Test/Draft link
+    const testLink = `${surveyBaseUrl}/s/${surveyId}?mode=TEST`;
 
-    // Live link (uses the survey domain with the short path)
-    const liveLink = `${surveyBaseUrl}/${surveyId}`;
+    // Live link
+    const liveLink = `${surveyBaseUrl}/s/${surveyId}`;
 
     return (
         <div className="flex w-full h-screen bg-background overflow-hidden relative">
