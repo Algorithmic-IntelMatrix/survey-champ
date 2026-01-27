@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { surveyApi } from "@/api/survey";
-import { Survey } from "@/types/survey";
+import { Survey } from "@surveychamp/types";
 import { toast } from "sonner";
 import { IconDeviceFloppy, IconExternalLink, IconAlertTriangle, IconX } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";

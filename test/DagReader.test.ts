@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { DAGReader } from "../lib/survey-engine/DagReader";
+import { DAGReader } from "@surveychamp/engine";
 
 // Mock Data Builders
 const createNode = (id: string, type: string, next: any, data: any = {}) => ({

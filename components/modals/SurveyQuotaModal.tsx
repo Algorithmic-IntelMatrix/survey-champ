@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { surveyApi } from "@/api/survey";
-import { SurveyQuota, SurveyWorkflow } from "@/types/survey";
+import { SurveyQuota, SurveyWorkflow } from "@surveychamp/types";
 import { surveyWorkflowApi } from "@/api/surveyWorkflow";
 import { toast } from "sonner";
 import { IconPlus, IconTrash, IconToggleLeft, IconToggleRight, IconAlertCircle, IconX } from "@tabler/icons-react";

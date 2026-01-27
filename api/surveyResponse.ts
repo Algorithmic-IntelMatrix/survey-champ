@@ -1,5 +1,5 @@
 import apiClient from "@/lib/api-client"
-import { StartResponseParams, UpdateResponseParams } from "@/types/survey";
+import { StartResponseParams, UpdateResponseParams } from "@surveychamp/types";
 
 export const surveyResponseApi = {
     startResponse: async (params: StartResponseParams) => {
