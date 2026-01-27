@@ -1,0 +1,24 @@
+{
+    "name": "@surveychamp/builder-api",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "bun --watch src/index.ts",
+        "start": "bun src/index.ts"
+    },
+    "dependencies": {
+        "@surveychamp/db": "workspace:*",
+        "@surveychamp/common": "workspace:*",
+        "@surveychamp/queue": "workspace:*",
+        "@surveychamp/redis": "workspace:*",
+        "express": "^5.0.0",
+        "cors": "^2.8.5",
+        "helmet": "^8.0.0",
+        "cookie-parser": "^1.4.7"
+    },
+    "devDependencies": {
+        "@types/express": "^5.0.0",
+        "@types/cors": "^2.8.17",
+        "@types/cookie-parser": "^1.4.6"
+    }
+}
