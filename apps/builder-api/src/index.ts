@@ -9,12 +9,19 @@ import surveyRoutes from "./routes/survey.route";
 import { surveyWorkflowRouter } from "./routes/surveyWorkflow.route";
 import surveyResponseRoutes from "./routes/surveyResponse.route";
 import { storageRouter } from "./routes/storage.route";
+import { SYSTEM_CONFIG } from "@surveychamp/common";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-app.use(cors({ origin: true, credentials: true })); // Configure strictly for production
-app.use(helmet());
+
+app.use(cors({
+    origin: [SYSTEM_CONFIG.APP_URL, SYSTEM_CONFIG.SURVEY_URL],
+    credentials: true,
+}));
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+}));
 app.use(cookieParser());
 app.use(express.json());
 

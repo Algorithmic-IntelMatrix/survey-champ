@@ -1,5 +1,6 @@
 import React from "react";
 import { useReactFlow, Node } from "@xyflow/react";
+import apiClient from "@/lib/api-client";
 import { getNodeDefinition, PropertyField } from "@/components/nodes/definitions";
 import { IconX, IconFolderPlus, IconTrash, IconPlus } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
@@ -169,13 +170,12 @@ function FieldRenderer({ field, value, onChange, nodes }: { field: PropertyField
                 if (!file) return;
 
                 try {
-                    const res = await fetch('http://localhost:8080/api/storage/upload-url', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ filename: file.name, fileType: file.type })
+                    const res = await apiClient.post('/storage/upload-url', {
+                        filename: file.name,
+                        fileType: file.type
                     });
-                    if (!res.ok) throw new Error("Failed to get upload URL");
-                    const { uploadUrl, publicUrl } = await res.json();
+
+                    const { uploadUrl, publicUrl } = res.data;
                     const upload = await fetch(uploadUrl, {
                         method: 'PUT',
                         body: file,
@@ -218,15 +218,12 @@ function FieldRenderer({ field, value, onChange, nodes }: { field: PropertyField
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
                     try {
-                        const res = await fetch('http://localhost:8080/api/storage/upload-url', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ filename: file.name, fileType: file.type })
+                        const res = await apiClient.post('/storage/upload-url', {
+                            filename: file.name,
+                            fileType: file.type
                         });
 
-                        if (!res.ok) continue;
-
-                        const { uploadUrl, publicUrl } = await res.json();
+                        const { uploadUrl, publicUrl } = res.data;
 
                         await fetch(uploadUrl, {
                             method: 'PUT',
