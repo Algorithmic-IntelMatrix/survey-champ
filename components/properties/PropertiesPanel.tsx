@@ -41,7 +41,25 @@ export default function PropertiesPanel({ node, nodes, onChange, onClose }: Prop
             {/* Form Fields */}
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
                 {definition.properties.map((field) => {
-                    if (field.visible && !field.visible(node.data)) {
+                    // Create a data object that includes default values for visibility checks
+                    const effectiveData = { ...node.data };
+                    definition.properties.forEach(p => {
+                        if (effectiveData[p.name] === undefined && p.defaultValue !== undefined) {
+                            effectiveData[p.name] = p.defaultValue;
+                        }
+                    });
+
+                    const visibleResult = field.visible ? field.visible(effectiveData) : true;
+
+                    if (field.visible) {
+                        console.log(`Field ${field.name} visibility:`, {
+                            result: visibleResult,
+                            interactionType: effectiveData.interactionType,
+                            data: JSON.stringify(effectiveData)
+                        });
+                    }
+
+                    if (visibleResult === false) {
                         return null;
                     }
 

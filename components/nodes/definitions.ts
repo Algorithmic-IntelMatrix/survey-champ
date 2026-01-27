@@ -278,7 +278,7 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
                 label: 'Question Text', 
                 type: 'text', 
                 defaultValue: 'What did you think about this?',
-                visible: (data) => data.interactionType && data.interactionType !== 'none'
+                visible: (data) => data.interactionType !== 'none'
             },
             { 
                 name: 'sliderConfig', 
@@ -324,7 +324,7 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
                 label: 'Question Text', 
                 type: 'text', 
                 defaultValue: 'What did you think about this?',
-                visible: (data) => data.interactionType && data.interactionType !== 'none'
+                visible: (data) => data.interactionType !== 'none'
             },
             { 
                 name: 'sliderConfig', 
@@ -369,7 +369,7 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
                 label: 'Question Text', 
                 type: 'text', 
                 defaultValue: 'What did you think about this?',
-                visible: (data) => data.interactionType && data.interactionType !== 'none'
+                visible: (data) => data.interactionType !== 'none'
             },
             { 
                 name: 'sliderConfig', 

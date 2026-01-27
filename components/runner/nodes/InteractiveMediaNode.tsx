@@ -90,30 +90,33 @@ export const InteractiveMediaNode = ({ msg, currentNodeId, responses, setRespons
                     )}
 
                     {/* SLIDER */}
-                    {interactionType === 'slider' && (
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between text-xs text-muted-foreground uppercase font-bold tracking-wider">
-                                <span>Min</span>
-                                <span className="text-xl text-primary">{sliderValue}</span>
-                                <span>Max</span>
+                    {interactionType === 'slider' && (() => {
+                        const [min, max] = sliderConfig.split('-').map(Number);
+                        return (
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between text-xs text-muted-foreground uppercase font-bold tracking-wider">
+                                    <span>{isNaN(min) ? 'Min' : min}</span>
+                                    <span className="text-xl text-primary">{sliderValue}</span>
+                                    <span>{isNaN(max) ? 'Max' : max}</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min={isNaN(min) ? 0 : min}
+                                    max={isNaN(max) ? 10 : max}
+                                    step={1}
+                                    value={sliderValue}
+                                    onChange={(e) => setSliderValue(Number(e.target.value))}
+                                    className="w-full accent-primary cursor-pointer"
+                                />
+                                <button
+                                    onClick={() => submit(sliderValue)}
+                                    className="w-full mt-4 flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3 rounded-lg font-medium hover:opacity-90 transition-all"
+                                >
+                                    Submit Rating
+                                </button>
                             </div>
-                            <input
-                                type="range"
-                                min={0}
-                                max={10} // Parse sliderConfig usually 
-                                step={1}
-                                value={sliderValue}
-                                onChange={(e) => setSliderValue(Number(e.target.value))}
-                                className="w-fullaccent-primary cursor-pointer"
-                            />
-                            <button
-                                onClick={() => submit(sliderValue)}
-                                className="w-full mt-4 flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3 rounded-lg font-medium hover:opacity-90 transition-all"
-                            >
-                                Submit Rating
-                            </button>
-                        </div>
-                    )}
+                        );
+                    })()}
 
                     {/* CHOICE */}
                     {interactionType === 'choice' && (
