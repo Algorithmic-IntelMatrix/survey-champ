@@ -1,5 +1,5 @@
 import apiClient from "@/lib/api-client";
-import { Survey } from "@/types/survey";
+import { Survey } from "@surveychamp/types";
 
 export const surveyApi = {
   getSurveys: async (): Promise<Survey[]> => {

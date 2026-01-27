@@ -1,5 +1,5 @@
 import apiClient from "@/lib/api-client"
-import { SurveyWorkflow } from "@/types/survey";
+import { SurveyWorkflow } from "@surveychamp/types";
 
 export const surveyWorkflowApi = {
     getLatestWorkflowBySurveyId: async (surveyId: string): Promise<SurveyWorkflow> => {

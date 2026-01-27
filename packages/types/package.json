@@ -1,0 +1,8 @@
+{
+    "name": "@surveychamp/types",
+    "version": "0.1.0",
+    "type": "module",
+    "main": "./src/survey.ts",
+    "dependencies": {},
+    "private": true
+}
