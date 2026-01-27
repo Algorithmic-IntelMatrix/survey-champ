@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import { surveySubmissionQueue } from "@surveychamp/queue";
+import { surveySubmissionSchema } from "@surveychamp/common";
 import { prisma } from "@surveychamp/db"; // Only for initial read, eventually replaced by cache
 import { redis } from "@surveychamp/redis";
 
@@ -56,12 +57,20 @@ app.get("/survey/:id", async (req, res) => {
   }
 });
 
+
 // Submit Response Endpoint (Producer)
 app.post("/submit", async (req, res) => {
   try {
-    const { surveyId, mode, response, status, outcome, respondentId } = req.body;
+    const validationResult = surveySubmissionSchema.safeParse(req.body);
 
-    // TODO: Validate payload with Zod Schema from @surveychamp/common
+    if (!validationResult.success) {
+      return res.status(400).json({ 
+        error: "Invalid submission data", 
+        details: validationResult.error.format() 
+      });
+    }
+
+    const { surveyId, mode, response, status, outcome, respondentId } = validationResult.data;
 
     // Push to Queue
     await surveySubmissionQueue.add("submission", {
