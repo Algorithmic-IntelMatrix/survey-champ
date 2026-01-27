@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { DAGReader } from "../components/properties/DagReader";
+import { DAGReader } from "../lib/engine/DagReader";
 
 // Mock Data Builders
 const createNode = (id: string, type: string, next: any, data: any = {}) => ({

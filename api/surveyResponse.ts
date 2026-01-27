@@ -1,19 +1,5 @@
 import apiClient from "@/lib/api-client"
-
-interface StartResponseParams {
-    surveyId: string;
-    mode?: string;
-    respondentId?: string;
-}
-
-interface UpdateResponseParams {
-    id: string;
-    response?: any;
-    status?: string;
-    outcome?: string;
-    respondentId?: string;
-    redirectUrl?: string;
-}
+import { StartResponseParams, UpdateResponseParams } from "@/types/survey";
 
 export const surveyResponseApi = {
     startResponse: async (params: StartResponseParams) => {

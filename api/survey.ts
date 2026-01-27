@@ -1,15 +1,5 @@
 import apiClient from "@/lib/api-client";
-
-export interface Survey {
-  id: string;
-  name: string;
-  description: string | null;
-  client: string;
-  createdAt: string;
-  updatedAt: string;
-  userId: string;
-  latestWorkflow?: { status: "DRAFT" | "PUBLISHED" | null };
-}
+import { Survey } from "@/types/survey";
 
 export const surveyApi = {
   getSurveys: async (): Promise<Survey[]> => {
