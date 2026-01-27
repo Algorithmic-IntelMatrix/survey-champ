@@ -29,6 +29,30 @@
         "typescript": "^5",
       },
     },
+    "apps/runner": {
+      "name": "@surveychamp/runner",
+      "version": "0.1.0",
+      "dependencies": {
+        "@surveychamp/engine": "workspace:*",
+        "@surveychamp/types": "workspace:*",
+        "@tabler/icons-react": "^3.36.1",
+        "axios": "^1.13.2",
+        "clsx": "^2.1.1",
+        "framer-motion": "^12.4.2",
+        "lucide-react": "^0.563.0",
+        "next": "16.1.4",
+        "react": "19.2.3",
+        "react-dom": "19.2.3",
+        "sonner": "^2.0.7",
+        "tailwind-merge": "^3.4.0",
+      },
+      "devDependencies": {
+        "@types/node": "^20",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "typescript": "^5",
+      },
+    },
     "packages/engine": {
       "name": "@surveychamp/engine",
       "version": "0.1.0",
@@ -216,6 +240,8 @@
     "@standard-schema/utils": ["@standard-schema/utils@0.3.0", "", {}, "sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g=="],
 
     "@surveychamp/engine": ["@surveychamp/engine@workspace:packages/engine"],
+
+    "@surveychamp/runner": ["@surveychamp/runner@workspace:apps/runner"],
 
     "@surveychamp/types": ["@surveychamp/types@workspace:packages/types"],
 
