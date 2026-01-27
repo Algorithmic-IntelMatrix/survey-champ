@@ -14,6 +14,7 @@ import { MatrixNode } from "./nodes/MatrixNode"
 import { CascadingNode } from "./nodes/CascadingNode"
 import { StartNode, ZipCodeNode } from "./nodes/UtilityNodes"
 import { DropdownNode } from "./nodes/DropdownNode"
+import { InteractiveMediaNode } from "./nodes/InteractiveMediaNode"
 
 interface Message {
     id: string;
@@ -348,6 +349,14 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
                                         workflow={workflow}
                                     />
                                     <DropdownNode
+                                        msg={msg}
+                                        currentNodeId={currentNodeId}
+                                        responses={responses}
+                                        setResponses={setResponses}
+                                        handleNext={handleNext}
+                                        workflow={workflow}
+                                    />
+                                    <InteractiveMediaNode
                                         msg={msg}
                                         currentNodeId={currentNodeId}
                                         responses={responses}

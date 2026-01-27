@@ -1,7 +1,7 @@
 import { IconTextCaption, IconNumbers, IconMail, IconCalendar, IconListDetails, IconCheckbox, IconStar, IconArrowMerge, IconForbid, IconPhoto, IconForms, IconListCheck, IconGitBranch, IconListNumbers } from '@tabler/icons-react';
 
 export type NodeCategory = 'input' | 'choice' | 'logic' | 'media' | 'flow';
-export type PropertyType = 'text' | 'textarea' | 'number' | 'switch' | 'select' | 'color' | 'options' | 'condition' | 'stepBuilder' | 'fileTextarea';
+export type PropertyType = 'text' | 'textarea' | 'number' | 'switch' | 'select' | 'color' | 'options' | 'condition' | 'stepBuilder' | 'fileTextarea' | 'file';
 
 export interface PropertyField {
     name: string;
@@ -12,6 +12,7 @@ export interface PropertyField {
     defaultValue?: any;
     options?: { label: string, value: string }[]; // For select type
     onBulkAdd?: (options: { label: string, value: string }[]) => void;
+    visible?: (data: any) => boolean;
 }
 
 export interface NodeDefinition {
@@ -257,30 +258,134 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
         icon: IconPhoto, 
         category: 'media',
         properties: [
-            { name: 'url', label: 'Image URL', type: 'text', placeholder: 'https://...' },
-            { name: 'alt', label: 'Alt Text', type: 'text' }
+            { name: 'url', label: 'Image URL', type: 'file', placeholder: 'Upload or paste URL...' },
+            { name: 'alt', label: 'Alt Text', type: 'text' },
+            { 
+                 name: 'interactionType', 
+                 label: 'Enable Interaction', 
+                 type: 'select', 
+                 defaultValue: 'none',
+                 options: [
+                     { label: 'None (Display Only)', value: 'none' },
+                     { label: 'Text Question', value: 'text' },
+                     { label: 'Slider Rating', value: 'slider' },
+                     { label: 'Multiple Choice', value: 'choice' }
+                 ],
+                 helperText: 'Add a question below this media'
+            },
+            { 
+                name: 'questionLabel', 
+                label: 'Question Text', 
+                type: 'text', 
+                defaultValue: 'What did you think about this?',
+                visible: (data) => data.interactionType && data.interactionType !== 'none'
+            },
+            { 
+                name: 'sliderConfig', 
+                label: 'Slider Config (Min-Max)', 
+                type: 'text', 
+                placeholder: '0-10', 
+                defaultValue: '0-10', 
+                helperText: 'Format: 0-10',
+                visible: (data) => data.interactionType === 'slider'
+            },
+            { 
+                name: 'choices', 
+                label: 'Choices', 
+                type: 'options', 
+                defaultValue: [{ label: 'Option 1', value: '1' }],
+                visible: (data) => data.interactionType === 'choice'
+            }
         ]
     },
     {
         type: 'video',
         label: 'Video',
         description: 'Embed a video',
-        icon: IconPhoto, // You might want a specific video icon if available
+        icon: IconPhoto, 
         category: 'media',
         properties: [
-            { name: 'url', label: 'Video URL', type: 'text', placeholder: 'https://...' },
-            { name: 'autoplay', label: 'Autoplay', type: 'switch', defaultValue: false }
+            { name: 'url', label: 'Video URL', type: 'file', placeholder: 'Upload or paste URL...' },
+            { name: 'autoplay', label: 'Autoplay', type: 'switch', defaultValue: false },
+             { 
+                 name: 'interactionType', 
+                 label: 'Enable Interaction', 
+                 type: 'select', 
+                 defaultValue: 'none',
+                 options: [
+                     { label: 'None (Display Only)', value: 'none' },
+                     { label: 'Text Question', value: 'text' },
+                     { label: 'Slider Rating', value: 'slider' },
+                     { label: 'Multiple Choice', value: 'choice' }
+                 ]
+            },
+            { 
+                name: 'questionLabel', 
+                label: 'Question Text', 
+                type: 'text', 
+                defaultValue: 'What did you think about this?',
+                visible: (data) => data.interactionType && data.interactionType !== 'none'
+            },
+            { 
+                name: 'sliderConfig', 
+                label: 'Slider Config (Min-Max)', 
+                type: 'text', 
+                placeholder: '0-10', 
+                defaultValue: '0-10',
+                visible: (data) => data.interactionType === 'slider'
+            },
+            { 
+                name: 'choices', 
+                label: 'Choices', 
+                type: 'options', 
+                defaultValue: [{ label: 'Option 1', value: '1' }],
+                visible: (data) => data.interactionType === 'choice'
+            }
         ]
     },
     {
         type: 'audio',
         label: 'Audio',
         description: 'Play an audio clip',
-        icon: IconPhoto, // Using generic photo/media icon for now or import Music/Volume
+        icon: IconPhoto, 
         category: 'media',
         properties: [
-            { name: 'url', label: 'Audio URL', type: 'text', placeholder: 'https://...' },
-            { name: 'autoplay', label: 'Autoplay', type: 'switch', defaultValue: false }
+            { name: 'url', label: 'Audio URL', type: 'file', placeholder: 'Upload or paste URL...' },
+            { name: 'autoplay', label: 'Autoplay', type: 'switch', defaultValue: false },
+             { 
+                 name: 'interactionType', 
+                 label: 'Enable Interaction', 
+                 type: 'select', 
+                 defaultValue: 'none',
+                 options: [
+                     { label: 'None (Display Only)', value: 'none' },
+                     { label: 'Text Question', value: 'text' },
+                     { label: 'Slider Rating', value: 'slider' },
+                     { label: 'Multiple Choice', value: 'choice' }
+                 ]
+            },
+            { 
+                name: 'questionLabel', 
+                label: 'Question Text', 
+                type: 'text', 
+                defaultValue: 'What did you think about this?',
+                visible: (data) => data.interactionType && data.interactionType !== 'none'
+            },
+            { 
+                name: 'sliderConfig', 
+                label: 'Slider Config (Min-Max)', 
+                type: 'text', 
+                placeholder: '0-10', 
+                defaultValue: '0-10',
+                visible: (data) => data.interactionType === 'slider'
+            },
+            { 
+                name: 'choices', 
+                label: 'Choices', 
+                type: 'options', 
+                defaultValue: [{ label: 'Option 1', value: '1' }],
+                visible: (data) => data.interactionType === 'choice'
+            }
         ]
     },
 

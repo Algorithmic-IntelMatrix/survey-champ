@@ -40,34 +40,40 @@ export default function PropertiesPanel({ node, nodes, onChange, onClose }: Prop
 
             {/* Form Fields */}
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                {definition.properties.map((field) => (
-                    <div key={field.name} className="space-y-1.5">
-                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                            {field.label}
-                        </label>
+                {definition.properties.map((field) => {
+                    if (field.visible && !field.visible(node.data)) {
+                        return null;
+                    }
 
-                        <FieldRenderer
-                            field={field}
-                            value={node.data[field.name] ?? field.defaultValue}
-                            onChange={(val) => {
-                                if (field.name === 'bulkOptions') {
-                                    // Special logic for bulk adding options
-                                    const lines = String(val).split('\n').map(l => l.trim()).filter(l => l.length > 0);
-                                    if (lines.length > 0) {
-                                        const newOptions = lines.map((l, i) => ({ label: l, value: `opt${Date.now()}_${i}` }));
-                                        onChange('options', newOptions);
+                    return (
+                        <div key={field.name} className="space-y-1.5">
+                            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                {field.label}
+                            </label>
+
+                            <FieldRenderer
+                                field={field}
+                                value={node.data[field.name] ?? field.defaultValue}
+                                onChange={(val) => {
+                                    if (field.name === 'bulkOptions') {
+                                        // Special logic for bulk adding options
+                                        const lines = String(val).split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                                        if (lines.length > 0) {
+                                            const newOptions = lines.map((l, i) => ({ label: l, value: `opt${Date.now()}_${i}` }));
+                                            onChange('options', newOptions);
+                                        }
                                     }
-                                }
-                                onChange(field.name, val);
-                            }}
-                            nodes={nodes}
-                        />
+                                    onChange(field.name, val);
+                                }}
+                                nodes={nodes}
+                            />
 
-                        {field.helperText && (
-                            <p className="text-[10px] text-muted-foreground">{field.helperText}</p>
-                        )}
-                    </div>
-                ))}
+                            {field.helperText && (
+                                <p className="text-[10px] text-muted-foreground">{field.helperText}</p>
+                            )}
+                        </div>
+                    );
+                })}
 
                 {/* Debug Info for Developers */}
                 <div className="mt-8 p-3 rounded-md bg-muted/50 border border-border text-[10px] font-mono text-muted-foreground break-all">
@@ -145,6 +151,61 @@ function FieldRenderer({ field, value, onChange, nodes }: { field: PropertyField
                             <input type="file" accept=".txt,.csv" className="hidden" onChange={handleFileUpload} />
                         </label>
                     </div>
+                </div>
+            );
+        case 'file':
+            const handleS3Upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                // 1. Get Presigned URL
+                try {
+                    // Assuming API base URL is relative /api or configured
+                    // In this environment we probably need a helper or fetch directly
+                    const res = await fetch('http://localhost:8080/api/storage/upload-url', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ filename: file.name, fileType: file.type })
+                    });
+
+                    if (!res.ok) throw new Error("Failed to get upload URL");
+
+                    const { uploadUrl, publicUrl } = await res.json();
+
+                    // 2. Upload to S3
+                    const upload = await fetch(uploadUrl, {
+                        method: 'PUT',
+                        body: file,
+                        headers: { 'Content-Type': file.type }
+                    });
+
+                    if (!upload.ok) throw new Error("Failed to upload file to S3");
+
+                    // 3. Update field with public URL
+                    onChange(publicUrl);
+
+                } catch (err) {
+                    console.error("Upload failed", err);
+                    alert("Upload failed. Check console for details.");
+                }
+            };
+
+            return (
+                <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="text"
+                            value={value || ""}
+                            onChange={(e) => onChange(e.target.value)}
+                            placeholder={field.placeholder || "https://..."}
+                            className="flex-1 px-3 py-2 text-sm bg-background border border-input rounded-md focus:outline-hidden focus:ring-1 focus:ring-primary transition-all"
+                        />
+                    </div>
+                    <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                        <IconFolderPlus size={20} className="text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground font-medium">Click to Upload File</span>
+                        <input type="file" className="hidden" onChange={handleS3Upload} />
+                    </label>
                 </div>
             );
         case 'number':

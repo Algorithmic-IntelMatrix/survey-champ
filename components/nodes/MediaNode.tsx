@@ -17,7 +17,11 @@ const MediaNode = (props: NodeProps<any>) => {
         >
             <div className="aspect-video w-full bg-muted rounded-md overflow-hidden flex items-center justify-center border border-border">
                 {url ? (
-                    <img src={url} alt={alt} className="w-full h-full object-cover" />
+                    (url.match(/\.(mp4|webm|ogg)$/i)) ? (
+                        <video src={url} className="w-full h-full object-cover" controls muted />
+                    ) : (
+                        <img src={url} alt={alt} className="w-full h-full object-cover" />
+                    )
                 ) : (
                     <div className="flex flex-col items-center gap-1 text-muted-foreground">
                         <IconPhoto size={24} className="opacity-50" />
