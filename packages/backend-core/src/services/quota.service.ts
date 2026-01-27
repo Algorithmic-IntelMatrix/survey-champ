@@ -7,7 +7,8 @@ type PrismaTx = any; // Simplifying type for Monorepo usage, or import from Pris
 
 interface QuotaRule {
     nodeId: string;
-    operator: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than';
+    subField?: string;
+    operator: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than' | 'gt' | 'lt';
     value: any;
 }
 
@@ -60,48 +61,33 @@ export const QuotaService = {
 
             // Count how many ALREADY COMPLETED responses match this rule
             
-            let whereClause: any = {
-                surveyId,
-                status: ResponseStatus.COMPLETED,
-                id: { not: currentResponseId }
-            };
-
-            // Structure: response: { [nodeId]: { answer: value } }
-            // For simple "equals":
-            if (rule.operator === 'equals') {
-                whereClause.response = {
-                    path: [rule.nodeId, 'answer'],
-                    equals: rule.value
-                };
-            } 
+            // Fetch all COMPLETED responses for this survey (excluding current)
+            // Fetching just the 'response' JSON for efficiency
+            const candidates = await tx.surveyResponse.findMany({
+                where: {
+                    surveyId,
+                    status: ResponseStatus.COMPLETED,
+                    id: { not: currentResponseId }
+                },
+                select: { response: true }
+            });
             
-            if (rule.operator === 'equals') {
-                 const count = await tx.surveyResponse.count({ where: whereClause });
-                 if (count >= quota.limit) {
-                     return { isOverQuota: true, redirectUrl: survey.overQuotaUrl, type: 'DEMOGRAPHIC' };
-                 }
-            } else {
-                // Fallback for complex operators: Fetch minimal data
-                const candidates = await tx.surveyResponse.findMany({
-                    where: {
-                        surveyId,
-                        status: ResponseStatus.COMPLETED,
-                        id: { not: currentResponseId }
-                    },
-                    select: { response: true }
-                });
-                
-                let count = 0;
-                for (const c of candidates) {
-                    const rData = c.response as Record<string, any>;
-                    if (matchesRule(rData, rule)) {
-                        count++;
-                    }
+            let count = 0;
+            for (const c of candidates) {
+                const rData = c.response as Record<string, any>;
+                if (rData && matchesRule(rData, rule)) {
+                    count++;
                 }
-                
-                if (count >= quota.limit) {
-                    return { isOverQuota: true, redirectUrl: survey.overQuotaUrl, type: 'DEMOGRAPHIC' };
-                }
+            }
+            
+            console.log(`[QuotaCheck] Rule: ${rule.nodeId} subField: ${rule.subField || 'none'} Target: ${rule.value} Limit: ${quota.limit} CurrentCount: ${count}`);
+            
+            if (count >= quota.limit) {
+                return { 
+                    isOverQuota: true, 
+                    redirectUrl: survey.overQuotaUrl, 
+                    type: 'DEMOGRAPHIC' 
+                };
             }
         }
 
@@ -114,20 +100,38 @@ function matchesRule(responseData: Record<string, any>, rule: QuotaRule): boolea
     const nodeResponse = responseData[rule.nodeId];
     if (!nodeResponse || nodeResponse.answer === undefined) return false;
     
-    const answer = nodeResponse.answer;
-    
-    switch (rule.operator) {
-        case 'equals':
-            return answer == rule.value; // Loose equality for nums/strings
-        case 'not_equals':
-            return answer != rule.value;
-        case 'contains':
-            return String(answer).includes(String(rule.value));
-        case 'greater_than':
-            return Number(answer) > Number(rule.value);
-        case 'less_than':
-            return Number(answer) < Number(rule.value);
-        default:
-            return false;
+    // Support subField (Matrix rows)
+    let answer: any;
+    if (rule.subField) {
+        // In Matrix choice, nodeResponse.answer is the object { row: col }
+        answer = nodeResponse.answer[rule.subField];
+    } else {
+        answer = nodeResponse.answer;
     }
+
+    if (answer === undefined) return false;
+    
+    // Normalize operators to support both full names and short names (gt, lt)
+    const op = rule.operator;
+    const isMatch = (() => {
+        switch (op) {
+            case 'equals':
+                return String(answer) == String(rule.value);
+            case 'not_equals':
+                return String(answer) != String(rule.value);
+            case 'contains':
+                return String(answer).includes(String(rule.value));
+            case 'greater_than':
+            case 'gt':
+                return Number(answer) > Number(rule.value);
+            case 'less_than':
+            case 'lt':
+                return Number(answer) < Number(rule.value);
+            default:
+                return false;
+        }
+    })();
+
+    console.log(`[QuotaCheck] Node: ${rule.nodeId} subField: ${rule.subField || 'none'} Answer: ${JSON.stringify(answer)} RuleValue: ${rule.value} Op: ${op} Match: ${isMatch}`);
+    return isMatch;
 }

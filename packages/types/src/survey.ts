@@ -26,7 +26,7 @@ export interface SurveyWorkflow {
 export interface SurveyQuota {
     id: string;
     surveyId: string;
-    rule: { nodeId: string; operator: string; value: any };
+    rule: { nodeId: string; subField?: string; operator: string; value: any };
     limit: number;
     enabled: boolean;
     createdAt: string;

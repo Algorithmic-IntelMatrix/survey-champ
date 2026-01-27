@@ -19,6 +19,7 @@ interface QuestionNode {
     label: string;
     type: string;
     options?: any[];
+    data?: any;
 }
 
 export function SurveyQuotaModal({ isOpen, onClose, surveyId }: SurveyQuotaModalProps) {
@@ -30,6 +31,7 @@ export function SurveyQuotaModal({ isOpen, onClose, surveyId }: SurveyQuotaModal
     const [isAdding, setIsAdding] = useState(false);
     const [newQuota, setNewQuota] = useState({
         nodeId: "",
+        subField: "",
         operator: "equals",
         value: "",
         limit: ""
@@ -60,7 +62,8 @@ export function SurveyQuotaModal({ isOpen, onClose, surveyId }: SurveyQuotaModal
                             id: node.id,
                             label: node.data.label,
                             type: node.type,
-                            options: node.data.options
+                            options: node.data.options,
+                            data: node.data // Store full data for complex extractions
                         });
                     }
                 });
@@ -84,6 +87,7 @@ export function SurveyQuotaModal({ isOpen, onClose, surveyId }: SurveyQuotaModal
             const created = await surveyApi.createQuota(surveyId, {
                 rule: {
                     nodeId: newQuota.nodeId,
+                    subField: newQuota.subField || undefined,
                     operator: newQuota.operator,
                     value: newQuota.value
                 },
@@ -92,7 +96,7 @@ export function SurveyQuotaModal({ isOpen, onClose, surveyId }: SurveyQuotaModal
             });
             setQuotas([created, ...quotas]);
             setIsAdding(false);
-            setNewQuota({ nodeId: "", operator: "equals", value: "", limit: "" });
+            setNewQuota({ nodeId: "", subField: "", operator: "equals", value: "", limit: "" });
             toast.success("Quota created");
         } catch (error) {
             console.error(error);
@@ -171,7 +175,7 @@ export function SurveyQuotaModal({ isOpen, onClose, surveyId }: SurveyQuotaModal
                                                     <select
                                                         className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                                                         value={newQuota.nodeId}
-                                                        onChange={(e) => setNewQuota({ ...newQuota, nodeId: e.target.value })}
+                                                        onChange={(e) => setNewQuota({ ...newQuota, nodeId: e.target.value, subField: "", value: "" })}
                                                     >
                                                         <option value="">Select...</option>
                                                         {nodes.map(n => (
@@ -179,6 +183,25 @@ export function SurveyQuotaModal({ isOpen, onClose, surveyId }: SurveyQuotaModal
                                                         ))}
                                                     </select>
                                                 </div>
+
+                                                {/* Subfield if Matrix */}
+                                                {nodes.find(n => n.id === newQuota.nodeId)?.type === 'matrixChoice' && (
+                                                    <div>
+                                                        <label className="text-xs font-semibold block mb-1">Row (Sub-field)</label>
+                                                        <select
+                                                            className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                                            value={newQuota.subField}
+                                                            onChange={(e) => setNewQuota({ ...newQuota, subField: e.target.value, value: "" })}
+                                                        >
+                                                            <option value="">Select Row...</option>
+                                                            {(nodes.find(n => n.id === newQuota.nodeId)?.data?.rows as any[] || []).map((row: any, i: number) => (
+                                                                <option key={i} value={row.label || row.value}>
+                                                                    {row.label}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                )}
                                                 <div>
                                                     <label className="text-xs font-semibold block mb-1">Operator</label>
                                                     <select
@@ -193,12 +216,44 @@ export function SurveyQuotaModal({ isOpen, onClose, surveyId }: SurveyQuotaModal
                                                 </div>
                                                 <div>
                                                     <label className="text-xs font-semibold block mb-1">Value</label>
-                                                    <input
-                                                        placeholder="Answer value"
-                                                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                                                        value={newQuota.value}
-                                                        onChange={(e) => setNewQuota({ ...newQuota, value: e.target.value })}
-                                                    />
+                                                    {(() => {
+                                                        const selectedNode = nodes.find(n => n.id === newQuota.nodeId);
+                                                        let questionOptions: any[] = [];
+
+                                                        if (selectedNode) {
+                                                            if (selectedNode.type === 'matrixChoice') {
+                                                                questionOptions = (selectedNode.data?.columns as any[]) || [];
+                                                            } else if (selectedNode.type === 'cascadingChoice') {
+                                                                // Simplified for now, cascading usually complex
+                                                                const steps = (selectedNode.data?.steps as any[]) || [];
+                                                                questionOptions = steps.flatMap((s: any) => s.options || []);
+                                                            } else {
+                                                                questionOptions = [...((selectedNode.options as any[]) || [])];
+                                                            }
+                                                        }
+
+                                                        return questionOptions.length > 0 ? (
+                                                            <select
+                                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                                                value={newQuota.value}
+                                                                onChange={(e) => setNewQuota({ ...newQuota, value: e.target.value })}
+                                                            >
+                                                                <option value="">Select...</option>
+                                                                {questionOptions.map((opt: any, i: number) => (
+                                                                    <option key={i} value={opt.value ?? opt.label}>
+                                                                        {opt.label || opt.value}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        ) : (
+                                                            <input
+                                                                placeholder="Answer value"
+                                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                                                value={newQuota.value}
+                                                                onChange={(e) => setNewQuota({ ...newQuota, value: e.target.value })}
+                                                            />
+                                                        );
+                                                    })()}
                                                 </div>
                                                 <div>
                                                     <label className="text-xs font-semibold block mb-1">Limit</label>
@@ -231,7 +286,10 @@ export function SurveyQuotaModal({ isOpen, onClose, surveyId }: SurveyQuotaModal
                                                     <div className="flex-1 grid grid-cols-3 gap-4">
                                                         <div>
                                                             <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1">Question</p>
-                                                            <p className="text-sm font-medium line-clamp-1" title={getNodeLabel(quota.rule.nodeId)}>{getNodeLabel(quota.rule.nodeId)}</p>
+                                                            <p className="text-sm font-medium line-clamp-1" title={getNodeLabel(quota.rule.nodeId)}>
+                                                                {getNodeLabel(quota.rule.nodeId)}
+                                                                {quota.rule.subField && <span className="text-xs text-primary font-normal ml-1">({quota.rule.subField})</span>}
+                                                            </p>
                                                         </div>
                                                         <div>
                                                             <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1">Rule</p>
