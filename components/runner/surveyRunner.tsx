@@ -13,6 +13,7 @@ import { SliderNode } from "./nodes/SliderNode"
 import { MatrixNode } from "./nodes/MatrixNode"
 import { CascadingNode } from "./nodes/CascadingNode"
 import { StartNode, ZipCodeNode } from "./nodes/UtilityNodes"
+import { DropdownNode } from "./nodes/DropdownNode"
 
 interface Message {
     id: string;
@@ -127,7 +128,7 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
             let displayValue = String(userValue);
 
             // Resolve labels for choice-based nodes
-            if (currentNode.type === 'singleChoice' || currentNode.type === 'multipleChoice') {
+            if (currentNode.type === 'singleChoice' || currentNode.type === 'multipleChoice' || currentNode.type === 'dropdown') {
                 const options = currentNode.data?.options || [];
                 if (Array.isArray(userValue)) {
                     // Multiple Choice
@@ -339,6 +340,14 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
                             {msg.role === 'assistant' && !isEnd && (
                                 <div className="w-full pt-6 pl-12 animate-in fade-in slide-in-from-bottom-2 duration-700">
                                     <ChoiceNode
+                                        msg={msg}
+                                        currentNodeId={currentNodeId}
+                                        responses={responses}
+                                        setResponses={setResponses}
+                                        handleNext={handleNext}
+                                        workflow={workflow}
+                                    />
+                                    <DropdownNode
                                         msg={msg}
                                         currentNodeId={currentNodeId}
                                         responses={responses}

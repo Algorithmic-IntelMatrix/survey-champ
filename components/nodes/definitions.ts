@@ -164,6 +164,20 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
         ]
     },
     { 
+        type: 'dropdown', 
+        label: 'Dropdown Select', 
+        description: 'Select from a dropdown menu', 
+        icon: IconListDetails, 
+        category: 'choice',
+        properties: [
+            ...commonProperties,
+            { name: 'placeholder', label: 'Placeholder Text', type: 'text', defaultValue: 'Select an option...' },
+            { name: 'options', label: 'Options', type: 'options', defaultValue: [{ label: 'Option 1', value: 'opt1' }, { label: 'Option 2', value: 'opt2' }] },
+            { name: 'bulkOptions', label: 'Bulk Add (one per line)', type: 'textarea', placeholder: 'Option A\nOption B\nOption C...', helperText: 'Paste a list to replace all options above' },
+            { name: 'searchable', label: 'Searchable', type: 'switch', defaultValue: true },
+        ]
+    },
+    { 
         type: 'rating', 
         label: 'Rating', 
         description: 'Star rating scale', 

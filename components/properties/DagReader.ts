@@ -146,21 +146,29 @@ export class DAGReader {
         
         const norm = (v: any) => String(v || '').toLowerCase().replace(/[’‘]/g, "'").replace(/\s+/g, ' ').trim();
 
-        if (typeof targetValue === 'string') {
-            const nt = norm(targetValue);
-            
-            // 1. Check standard options
-            if (possibleOptions && Array.isArray(possibleOptions)) {
-                const matchingOption = possibleOptions.find((opt: any) => norm(opt.label) === nt);
-                if (matchingOption) targetValue = matchingOption.value;
+        // Helper to resolve label -> value
+        const resolveToValue = (val: string) => {
+            const nVal = norm(val);
+             // 1. Check standard options
+             if (possibleOptions && Array.isArray(possibleOptions)) {
+                const matchingOption = possibleOptions.find((opt: any) => norm(opt.label) === nVal);
+                if (matchingOption) return matchingOption.value;
             }
-
             // 2. Check "Other" option
-            if (fieldNode?.data?.allowOther && nt !== 'other') {
-                if (norm(fieldNode.data.otherLabel || 'Other') === nt) {
-                    targetValue = 'other';
+            if (fieldNode?.data?.allowOther && nVal !== 'other') {
+                if (norm(fieldNode.data.otherLabel || 'Other') === nVal) {
+                    return 'other';
                 }
             }
+            return val;
+        };
+
+        if (typeof value === 'string') {
+            value = resolveToValue(value);
+        }
+
+        if (typeof targetValue === 'string') {
+            targetValue = resolveToValue(targetValue);
         }
         // ---------------------------------------------------------
 

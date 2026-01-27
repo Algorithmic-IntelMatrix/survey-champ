@@ -23,6 +23,7 @@ const componentMap: Record<string, React.ComponentType<any>> = {
 
     singleChoice: ChoiceNode,
     multipleChoice: ChoiceNode,
+    dropdown: ChoiceNode,
     rating: RatingNode,
     slider: SliderNode,
     ranking: RankingNode,
