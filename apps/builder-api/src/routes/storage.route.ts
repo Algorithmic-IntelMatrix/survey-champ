@@ -1,10 +1,11 @@
 import { Router } from 'express';
-import { s3Service } from '../services/S3Service';
+import { s3Service } from '@surveychamp/backend-core';
 import { v4 as uuidv4 } from 'uuid';
+import { authenticate } from '@/packages/common/src';
 
 export const storageRouter = Router();
 
-storageRouter.post('/upload-url', async (req, res) => {
+storageRouter.post('/upload-url', authenticate,async (req, res) => {
     try {
         const { filename, fileType } = req.body;
 
@@ -35,7 +36,7 @@ storageRouter.post('/upload-url', async (req, res) => {
 
 // Redirect Endpoint for Permanent Access
 // Captures the full path after /view/ as the key (e.g. "uploads/image.png")
-storageRouter.get('/view/uploads/:key', async (req, res) => {
+storageRouter.get('/view/uploads/:key',authenticate,async (req, res) => {
     try {
         const key = req.params.key; 
         

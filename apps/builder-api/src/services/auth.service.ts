@@ -1,7 +1,8 @@
 import { prisma } from "@surveychamp/db";
 import bcrypt from "bcrypt";
-import { sign } from "jsonwebtoken";
-import { SYSTEM_CONFIG, type SignupData, type LoginData } from "@surveychamp/common";
+import { sign, verify } from "jsonwebtoken";
+import { SYSTEM_CONFIG } from "@surveychamp/common";
+import type { SignupData, LoginData } from "@surveychamp/common";
 import { v4 as uuidv4 } from "uuid";
 
 export const AuthService = {
@@ -18,9 +19,7 @@ export const AuthService = {
             data: { name, email, password: hashedPassword }
         });
 
-        // Use a common helper to sanitize user object if possible, or just return needed fields
-        const { password: _, ...userWithoutPassword } = newUser;
-        return userWithoutPassword;
+        return newUser;
     },
 
     login: async (data: LoginData) => {
@@ -30,6 +29,7 @@ export const AuthService = {
         if (!user) {
             throw new Error("User not found");
         }
+
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
             throw new Error("Invalid password");
@@ -37,8 +37,7 @@ export const AuthService = {
 
         const tokens = await AuthService.generateTokens(user.id, user.email);
         
-        const { password: _, ...userWithoutPassword } = user;
-        return { user: userWithoutPassword, ...tokens };
+        return { user, ...tokens };
     },
 
     generateTokens: async (userId: string, email: string) => {
@@ -89,7 +88,6 @@ export const AuthService = {
         if (!user) {
             throw new Error("User not found");
         }
-        const { password: _, ...userWithoutPassword } = user;
-        return userWithoutPassword;
+        return user;
     }
 };

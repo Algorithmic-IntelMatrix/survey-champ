@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { prisma, ResponseStatus, Mode } from "@surveychamp/db"; // Import from db package
-import { QuotaService } from "../services/quota.service";
+import { QuotaService } from "@surveychamp/backend-core";
 
 export const surveyResponseController = {
     getLatestSurveyResponse: async (req: Request, res: Response) => {

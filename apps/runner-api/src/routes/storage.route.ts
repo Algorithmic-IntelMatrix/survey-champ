@@ -1,37 +1,11 @@
 import { Router } from 'express';
-import { s3Service } from '../services/S3Service';
+import { s3Service } from '@surveychamp/backend-core';
 import { v4 as uuidv4 } from 'uuid';
 
 export const storageRouter = Router();
 
-storageRouter.post('/upload-url', async (req, res) => {
-    try {
-        const { filename, fileType } = req.body;
-
-        if (!filename || !fileType) {
-            res.status(400).json({ error: "Filename and fileType are required" });
-            return;
-        }
-
-        const ext = filename.split('.').pop();
-        const key = `uploads/${uuidv4()}.${ext}`;
-
-        const { uploadUrl } = await s3Service.generateUploadUrl(key, fileType);
-        
-        // Return the permanent Redirect URL instead of the temporary signed URL
-        // Content will be served via the /view/:key endpoint which redirects
-        const protocol = req.protocol;
-        const host = req.get('host');
-        // In monorepo, ensure the path aligns with how the router is mounted. 
-        // If mounted at /api/storage, then /api/storage/view/ is correct.
-        const publicUrl = `${protocol}://${host}/api/storage/view/${key}`;
-
-        res.json({ uploadUrl, publicUrl, key });
-    } catch (error: any) {
-        console.error("S3 Upload Error:", error);
-        res.status(500).json({ error: "Failed to generate upload URL" });
-    }
-});
+// Runner only needs read access (if even that directly, usually redirects)
+// Uploads are handled by Builder API only.
 
 // Redirect Endpoint for Permanent Access
 // Captures the full path after /view/ as the key (e.g. "uploads/image.png")

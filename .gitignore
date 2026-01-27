@@ -20,6 +20,9 @@
 apps/builder/.next/
 apps/runner/.next/
 
+apps/builder-api/node_modules/
+apps/runner-api/node_modules/
+
 # production
 /build
 

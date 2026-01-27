@@ -1,8 +1,6 @@
 import type { Request, Response } from "express";
 import { createSurveyWorkflowSchema, updateSurveyWorkflowSchema } from "@surveychamp/common";
-import { surveyWorkflowService } from "../services/surveyWorkflow.service";
-import { surveyService } from "../services/survey.service";
-import { validateWorkflow } from "../utils/graphValidation";
+import { surveyWorkflowService, surveyService, validateWorkflow } from "@surveychamp/backend-core";
 
 export const surveyWorkflowController = {
   createWorkflow: async (req: Request, res: Response) => {

@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { createSurveySchema, updateSurveySchema } from "@surveychamp/common";
-import { surveyService } from "../services/survey.service";
+import { surveyService } from "@surveychamp/backend-core";
 
 export const surveyController = {
     createSurvey : async (req : Request, res : Response) =>{
