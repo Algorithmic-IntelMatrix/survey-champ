@@ -1,7 +1,7 @@
 import React from "react";
 import { useReactFlow, Node } from "@xyflow/react";
 import { getNodeDefinition, PropertyField } from "@/components/nodes/definitions";
-import { IconX, IconFolderPlus, IconTrash } from "@tabler/icons-react";
+import { IconX, IconFolderPlus, IconTrash, IconPlus } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import { ConditionBuilder } from "./ConditionBuilder";
 import { StepsBuilder } from "./StepsBuilder";
@@ -40,58 +40,50 @@ export default function PropertiesPanel({ node, nodes, onChange, onClose }: Prop
 
             {/* Form Fields */}
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                {definition.properties.map((field) => {
-                    // Create a data object that includes default values for visibility checks
-                    const effectiveData = { ...node.data };
+                {(() => {
+                    // Pre-calculate data with defaults for consistent visibility checks
+                    const dataWithDefaults = { ...node.data };
                     definition.properties.forEach(p => {
-                        if (effectiveData[p.name] === undefined && p.defaultValue !== undefined) {
-                            effectiveData[p.name] = p.defaultValue;
+                        if (dataWithDefaults[p.name] === undefined && p.defaultValue !== undefined) {
+                            dataWithDefaults[p.name] = p.defaultValue;
                         }
                     });
 
-                    const visibleResult = field.visible ? field.visible(effectiveData) : true;
+                    return definition.properties.map((field) => {
+                        // Visibility Check
+                        if (field.visible && field.visible(dataWithDefaults) === false) {
+                            return null;
+                        }
 
-                    if (field.visible) {
-                        console.log(`Field ${field.name} visibility:`, {
-                            result: visibleResult,
-                            interactionType: effectiveData.interactionType,
-                            data: JSON.stringify(effectiveData)
-                        });
-                    }
+                        return (
+                            <div key={field.name} className="space-y-1.5">
+                                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                    {field.label}
+                                </label>
 
-                    if (visibleResult === false) {
-                        return null;
-                    }
-
-                    return (
-                        <div key={field.name} className="space-y-1.5">
-                            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                                {field.label}
-                            </label>
-
-                            <FieldRenderer
-                                field={field}
-                                value={node.data[field.name] ?? field.defaultValue}
-                                onChange={(val) => {
-                                    if (field.name === 'bulkOptions') {
-                                        // Special logic for bulk adding options
-                                        const lines = String(val).split('\n').map(l => l.trim()).filter(l => l.length > 0);
-                                        if (lines.length > 0) {
-                                            const newOptions = lines.map((l, i) => ({ label: l, value: `opt${Date.now()}_${i}` }));
-                                            onChange('options', newOptions);
+                                <FieldRenderer
+                                    field={field}
+                                    value={node.data[field.name] ?? field.defaultValue}
+                                    onChange={(val) => {
+                                        if (field.name === 'bulkOptions') {
+                                            const lines = String(val).split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                                            if (lines.length > 0) {
+                                                const newOptions = lines.map((l, i) => ({ label: l, value: `opt${Date.now()}_${i}` }));
+                                                onChange('options', newOptions);
+                                            }
                                         }
-                                    }
-                                    onChange(field.name, val);
-                                }}
-                                nodes={nodes}
-                            />
+                                        onChange(field.name, val);
+                                    }}
+                                    nodes={nodes}
+                                />
 
-                            {field.helperText && (
-                                <p className="text-[10px] text-muted-foreground">{field.helperText}</p>
-                            )}
-                        </div>
-                    );
-                })}
+                                {field.helperText && (
+                                    <p className="text-[10px] text-muted-foreground">{field.helperText}</p>
+                                )}
+                            </div>
+                        );
+                    });
+                })()}
 
                 {/* Debug Info for Developers */}
                 <div className="mt-8 p-3 rounded-md bg-muted/50 border border-border text-[10px] font-mono text-muted-foreground break-all">
@@ -176,32 +168,21 @@ function FieldRenderer({ field, value, onChange, nodes }: { field: PropertyField
                 const file = e.target.files?.[0];
                 if (!file) return;
 
-                // 1. Get Presigned URL
                 try {
-                    // Assuming API base URL is relative /api or configured
-                    // In this environment we probably need a helper or fetch directly
                     const res = await fetch('http://localhost:8080/api/storage/upload-url', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ filename: file.name, fileType: file.type })
                     });
-
                     if (!res.ok) throw new Error("Failed to get upload URL");
-
                     const { uploadUrl, publicUrl } = await res.json();
-
-                    // 2. Upload to S3
                     const upload = await fetch(uploadUrl, {
                         method: 'PUT',
                         body: file,
                         headers: { 'Content-Type': file.type }
                     });
-
                     if (!upload.ok) throw new Error("Failed to upload file to S3");
-
-                    // 3. Update field with public URL
                     onChange(publicUrl);
-
                 } catch (err) {
                     console.error("Upload failed", err);
                     alert("Upload failed. Check console for details.");
@@ -224,6 +205,66 @@ function FieldRenderer({ field, value, onChange, nodes }: { field: PropertyField
                         <span className="text-sm text-muted-foreground font-medium">Click to Upload File</span>
                         <input type="file" className="hidden" onChange={handleS3Upload} />
                     </label>
+                </div>
+            );
+        case 'files':
+            const handleMultiUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+                const files = e.target.files;
+                if (!files || files.length === 0) return;
+
+                const uploadedUrls = [...(value || [])];
+
+                // 1. Get Presigned URLs and upload each
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    try {
+                        const res = await fetch('http://localhost:8080/api/storage/upload-url', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ filename: file.name, fileType: file.type })
+                        });
+
+                        if (!res.ok) continue;
+
+                        const { uploadUrl, publicUrl } = await res.json();
+
+                        await fetch(uploadUrl, {
+                            method: 'PUT',
+                            body: file,
+                            headers: { 'Content-Type': file.type }
+                        });
+
+                        uploadedUrls.push(publicUrl);
+                    } catch (err) {
+                        console.error("Upload failed for file:", file.name, err);
+                    }
+                }
+                onChange(uploadedUrls);
+            };
+
+            return (
+                <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                        {(value || []).map((url: string, idx: number) => (
+                            <div key={idx} className="relative group aspect-square rounded-md overflow-hidden border border-border bg-muted">
+                                <img src={url} className="w-full h-full object-cover" />
+                                <button
+                                    onClick={() => {
+                                        const newFiles = value.filter((_: any, i: number) => i !== idx);
+                                        onChange(newFiles);
+                                    }}
+                                    className="absolute top-1 right-1 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                                >
+                                    <IconTrash size={12} />
+                                </button>
+                            </div>
+                        ))}
+                        <label className="flex flex-col items-center justify-center aspect-square border-2 border-dashed border-border rounded-md cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-all text-muted-foreground hover:text-primary">
+                            <IconPlus size={24} />
+                            <span className="text-[10px] font-medium mt-1">Add Image</span>
+                            <input type="file" multiple className="hidden" onChange={handleMultiUpload} accept="image/*" />
+                        </label>
+                    </div>
                 </div>
             );
         case 'number':

@@ -1,7 +1,7 @@
 import { IconTextCaption, IconNumbers, IconMail, IconCalendar, IconListDetails, IconCheckbox, IconStar, IconArrowMerge, IconForbid, IconPhoto, IconForms, IconListCheck, IconGitBranch, IconListNumbers } from '@tabler/icons-react';
 
 export type NodeCategory = 'input' | 'choice' | 'logic' | 'media' | 'flow';
-export type PropertyType = 'text' | 'textarea' | 'number' | 'switch' | 'select' | 'color' | 'options' | 'condition' | 'stepBuilder' | 'fileTextarea' | 'file';
+export type PropertyType = 'text' | 'textarea' | 'number' | 'switch' | 'select' | 'color' | 'options' | 'condition' | 'stepBuilder' | 'fileTextarea' | 'file' | 'files';
 
 export interface PropertyField {
     name: string;
@@ -258,7 +258,7 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
         icon: IconPhoto, 
         category: 'media',
         properties: [
-            { name: 'url', label: 'Image URL', type: 'file', placeholder: 'Upload or paste URL...' },
+            { name: 'urls', label: 'Images', type: 'files', defaultValue: [] },
             { name: 'alt', label: 'Alt Text', type: 'text' },
             { 
                  name: 'interactionType', 
