@@ -4,6 +4,8 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import { createSurveySubmissionWorker } from "@surveychamp/queue";
 import { prisma } from "@surveychamp/db";
+import authRoutes from "./routes/auth.route";
+import surveyRoutes from "./routes/survey.route";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -13,9 +15,13 @@ app.use(helmet());
 app.use(cookieParser());
 app.use(express.json());
 
+
 app.get("/", (req, res) => {
   res.json({ service: "builder-api", status: "ok" });
 });
+
+app.use("/auth", authRoutes);
+app.use("/survey", surveyRoutes);
 
 // Initialize Worker
 const worker = createSurveySubmissionWorker(async (job) => {
