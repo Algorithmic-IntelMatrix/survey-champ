@@ -1,5 +1,5 @@
 import { expect, test, describe } from "bun:test";
-import { DAGReader } from "../components/properties/DagReader";
+import { DAGReader } from "../lib/survey-engine/DagReader";
 
 describe("DAGReader", () => {
     const mockGraph = {

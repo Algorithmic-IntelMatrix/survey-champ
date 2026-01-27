@@ -1,28 +1,5 @@
 import apiClient from "@/lib/api-client";
-
-export interface Survey {
-  id: string;
-  name: string;
-  description: string | null;
-  client: string;
-  createdAt: string;
-  updatedAt: string;
-  userId: string;
-  latestWorkflow?: { status: "DRAFT" | "PUBLISHED" | null };
-  globalQuota: number | null;
-  overQuotaUrl: string | null;
-  redirectUrl: string | null;
-  securityTerminateUrl: string | null;
-}
-
-export interface SurveyQuota {
-    id: string;
-    surveyId: string;
-    rule: { nodeId: string; operator: string; value: any };
-    limit: number;
-    enabled: boolean;
-    createdAt: string;
-}
+import { Survey, SurveyQuota } from "@/types/survey";
 
 export const surveyApi = {
   getSurveys: async (): Promise<Survey[]> => {

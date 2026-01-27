@@ -1,14 +1,5 @@
 import apiClient from "@/lib/api-client"
-
-
-interface SurveyWorkflow {
-    id: string;
-    surveyId: string;
-    runtimeJson: any;
-    designJson: any;
-    createdAt: string;
-    updatedAt: string;
-}
+import { SurveyWorkflow } from "@/types/survey";
 
 export const surveyWorkflowApi = {
     getLatestWorkflowBySurveyId: async (surveyId: string): Promise<SurveyWorkflow> => {
