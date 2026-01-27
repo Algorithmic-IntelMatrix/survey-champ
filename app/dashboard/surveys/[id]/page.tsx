@@ -24,11 +24,13 @@ import { nodeTypes, edgeTypes, getNodeInitialData } from '@/components/nodes';
 import SurveyNodeSidebar from '@/components/SurveyNodeSidebar';
 import PropertiesPanel from '@/components/properties/PropertiesPanel';
 import NodeViewer from '@/components/NodeViewer';
-import { IconCloudUpload, IconCheck, IconAlertCircle, IconLoader2, IconPlayerPlay, IconWorld, IconShare, IconCopy, IconX, IconExternalLink } from '@tabler/icons-react';
+import { IconCloudUpload, IconCheck, IconAlertCircle, IconLoader2, IconPlayerPlay, IconWorld, IconShare, IconCopy, IconX, IconExternalLink, IconChartBar, IconFilter, IconSettings } from '@tabler/icons-react';
 import { validateWorkflow } from '@/lib/validate-workflow';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { generateUniqueId } from "@/lib/utils";
+import { SurveySettingsModal } from '@/components/modals/SurveySettingsModal';
+import { SurveyQuotaModal } from '@/components/modals/SurveyQuotaModal';
 
 // Helper to generate unique ID
 const getId = () => generateUniqueId('node');
@@ -97,6 +99,8 @@ function SurveyFlow() {
 
     // Share Modal State
     const [isShareOpen, setIsShareOpen] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [isQuotaOpen, setIsQuotaOpen] = useState(false);
 
     // Use undefined as initial state for the instance
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | undefined>(undefined);
@@ -397,6 +401,31 @@ function SurveyFlow() {
 
                     {/* Action Buttons Group */}
                     <div className="flex items-center gap-1 bg-background/90 backdrop-blur-md border border-border/60 p-1 rounded-lg shadow-sm">
+                        {/* Navigation */}
+                        <button
+                            onClick={() => router.push(`/dashboard/surveys/${surveyId}/metrics`)}
+                            className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-all"
+                            title="Metrics"
+                        >
+                            <IconChartBar size={18} />
+                        </button>
+                        <button
+                            onClick={() => setIsQuotaOpen(true)}
+                            className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-all"
+                            title="Traffic Control (Quotas)"
+                        >
+                            <IconFilter size={18} />
+                        </button>
+                        <button
+                            onClick={() => setIsSettingsOpen(true)}
+                            className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-all"
+                            title="Settings"
+                        >
+                            <IconSettings size={18} />
+                        </button>
+
+                        <div className="w-px h-4 bg-border mx-1" />
+
                         {/* Share */}
                         <button
                             onClick={() => setIsShareOpen(true)}
@@ -432,16 +461,6 @@ function SurveyFlow() {
                     <div className="w-px h-6 bg-border mx-2" />
 
                     <button
-                        onClick={() => {
-                            toast.success("Design autosaved successfully.");
-                        }}
-                        className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full transition-all"
-                        title="Save Draft"
-                    >
-                        <IconCloudUpload size={20} />
-                    </button>
-
-                    <button
                         onClick={togglePublish}
                         className={cn(
                             "px-4 py-2 text-xs font-bold uppercase tracking-wide rounded-full shadow-lg transition-all hover:-translate-y-0.5 active:translate-y-0",
@@ -455,9 +474,11 @@ function SurveyFlow() {
                 </div>
             </div>
 
+            {/* Overlays / Modals */}
+
             {/* Share Dialog Overlay */}
             {isShareOpen && (
-                <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                     <div
                         className="bg-background border border-border shadow-2xl rounded-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"
                         onClick={(e) => e.stopPropagation()}
@@ -572,6 +593,18 @@ function SurveyFlow() {
                     onClose={() => setSelectedNodeId(null)}
                 />
             )}
+
+            {/* Quota & Settings Modals */}
+            <SurveySettingsModal
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                surveyId={surveyId}
+            />
+            <SurveyQuotaModal
+                isOpen={isQuotaOpen}
+                onClose={() => setIsQuotaOpen(false)}
+                surveyId={surveyId}
+            />
         </div>
     );
 }

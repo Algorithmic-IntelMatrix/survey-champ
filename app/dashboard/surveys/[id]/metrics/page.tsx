@@ -20,7 +20,8 @@ import {
     IconChevronRight,
     IconEye,
     IconSearch,
-    IconFilter
+    IconFilter,
+    IconSettings
 } from "@tabler/icons-react";
 import { motion } from "motion/react";
 import {
@@ -36,6 +37,8 @@ import {
     Pie
 } from "recharts";
 import { cn } from "@/lib/utils";
+import { SurveySettingsModal } from "@/components/modals/SurveySettingsModal";
+import { SurveyQuotaModal } from "@/components/modals/SurveyQuotaModal";
 
 interface MetricData {
     mode: string;
@@ -56,6 +59,8 @@ export default function SurveyMetricsPage() {
     const [responses, setResponses] = useState<any[]>([]);
     const [runtimeJson, setRuntimeJson] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [isQuotaOpen, setIsQuotaOpen] = useState(false);
 
     // Pagination State
     // Pagination & Search State
@@ -251,6 +256,19 @@ export default function SurveyMetricsPage() {
                             title="Refresh Data"
                         >
                             <IconRefresh size={20} />
+                        </button>
+                        <button
+                            onClick={() => setIsQuotaOpen(true)}
+                            className="px-4 py-2 text-sm font-semibold border border-border rounded-lg hover:bg-muted transition-all"
+                        >
+                            Quotas
+                        </button>
+                        <button
+                            onClick={() => setIsSettingsOpen(true)}
+                            className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all"
+                            title="Settings"
+                        >
+                            <IconSettings size={20} />
                         </button>
                         <button
                             onClick={() => router.push(`/dashboard/surveys/${id}`)}
@@ -545,7 +563,18 @@ export default function SurveyMetricsPage() {
                     )}
                 </div>
             </div>
-        </div >
+
+            <SurveySettingsModal
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                surveyId={id}
+            />
+            <SurveyQuotaModal
+                isOpen={isQuotaOpen}
+                onClose={() => setIsQuotaOpen(false)}
+                surveyId={id}
+            />
+        </div>
     );
 }
 
