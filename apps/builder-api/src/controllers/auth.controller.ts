@@ -40,6 +40,7 @@ export const AuthController = {
                 token: accessToken 
             });
         } catch (error: any) {
+            console.log(error);
             const status = error.message === "User not found" ? 404 : error.message === "Invalid password" ? 401 : 400;
             return res.status(status).json({ message: error.message || "An error occurred during login" });
         }

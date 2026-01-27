@@ -6,6 +6,10 @@ import { surveySubmissionSchema } from "@surveychamp/common";
 import { prisma } from "@surveychamp/db"; // Only for initial read, eventually replaced by cache
 import { redis } from "@surveychamp/redis";
 
+import responseRoutes from "./routes/response.route";
+import { surveyWorkflowRouter } from "./routes/workflow.route";
+import { storageRouter } from "./routes/storage.route";
+
 const app = express();
 const PORT = process.env.PORT || 4001;
 
@@ -19,6 +23,10 @@ const CACHE_TTL = 3600; // 1 hour
 app.get("/", (req, res) => {
   res.json({ service: "runner-api", status: "ok" });
 });
+
+app.use("/api/responses", responseRoutes);
+app.use("/api/workflows", surveyWorkflowRouter);
+app.use("/api/storage", storageRouter);
 
 // Get Survey Endpoint (Cache-Aside)
 app.get("/survey/:id", async (req, res) => {

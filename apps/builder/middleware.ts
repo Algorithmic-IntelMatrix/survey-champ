@@ -7,7 +7,7 @@ export function middleware(request: NextRequest) {
 
     // Define your domains from environment variables
     const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const SURVEY_URL = process.env.NEXT_PUBLIC_SURVEY_URL || 'http://survey.localhost:3000';
+    const SURVEY_URL = process.env.NEXT_PUBLIC_SURVEY_URL || 'http://localhost:3001';
     
     // Extract domain from URL (remove proto and trailing slashes)
     const APP_DOMAIN = APP_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');

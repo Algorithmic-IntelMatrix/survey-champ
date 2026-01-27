@@ -6,6 +6,9 @@ import { createSurveySubmissionWorker } from "@surveychamp/queue";
 import { prisma } from "@surveychamp/db";
 import authRoutes from "./routes/auth.route";
 import surveyRoutes from "./routes/survey.route";
+import { surveyWorkflowRouter } from "./routes/surveyWorkflow.route";
+import surveyResponseRoutes from "./routes/surveyResponse.route";
+import { storageRouter } from "./routes/storage.route";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -20,8 +23,11 @@ app.get("/", (req, res) => {
   res.json({ service: "builder-api", status: "ok" });
 });
 
-app.use("/auth", authRoutes);
-app.use("/survey", surveyRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/surveys", surveyRoutes);
+app.use("/api/workflows", surveyWorkflowRouter);
+app.use("/api/response", surveyResponseRoutes);
+app.use("/api/storage", storageRouter);
 
 // Initialize Worker
 const worker = createSurveySubmissionWorker(async (job) => {
