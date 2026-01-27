@@ -107,6 +107,20 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
         }
     }, [id])
 
+    const currentNode = currentNodeId ? reader?.getNode(currentNodeId) : null;
+    const isEnd = currentNode?.type === 'end';
+
+    // Heartbeat Effect
+    useEffect(() => {
+        if (!responseId || isEnd || !workflow) return;
+
+        const heartbeatInterval = setInterval(() => {
+            surveyResponseApi.sendHeartbeat(responseId).catch(console.error);
+        }, 30000); // 30 seconds
+
+        return () => clearInterval(heartbeatInterval);
+    }, [responseId, isEnd, workflow]);
+
     const addMessage = (role: 'assistant' | 'user', type: string, content: string, nodeId?: string, options?: any[]) => {
         setMessages(prev => [...prev, {
             id: Math.random().toString(36).substr(2, 9),
@@ -240,7 +254,7 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
                         if (outcomeUpper.includes("DISQUALIF")) endStatus = "DISQUALIFIED";
                         else if (outcomeUpper.includes("QUALITY")) endStatus = "QUALITY_TERMINATE";
                         else if (outcomeUpper.includes("SECURITY")) endStatus = "SECURITY_TERMINATE";
-                        else if (outcomeUpper.includes("FAIL")) endStatus = "FAILED";
+                        else if (outcomeUpper.includes("DROP") || outcomeUpper.includes("FAIL")) endStatus = "DROPPED";
                         else if (outcomeUpper.includes("QUOTA")) endStatus = "OVER_QUOTA";
                         else endStatus = "COMPLETED";
 
@@ -280,8 +294,7 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
         <p className="font-bold text-lg tracking-tight">Preparing Survey Experience...</p>
     </div>
 
-    const currentNode = currentNodeId ? reader?.getNode(currentNodeId) : null;
-    const isEnd = currentNode?.type === 'end';
+
 
     return (
         <div className="flex flex-col h-screen w-screen bg-background overflow-hidden relative font-sans selection:bg-primary/10">

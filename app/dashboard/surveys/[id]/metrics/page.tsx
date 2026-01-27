@@ -41,7 +41,7 @@ interface MetricData {
     mode: string;
     clicked: number;
     completed: number;
-    failed: number;
+    dropped: number;
     disqualified: number;
     overQuota: number;
     qualityTerminate: number;
@@ -91,13 +91,13 @@ export default function SurveyMetricsPage() {
     const totalMetrics = metrics.reduce((acc, curr) => ({
         clicked: acc.clicked + curr.clicked,
         completed: acc.completed + curr.completed,
-        failed: acc.failed + curr.failed,
+        dropped: acc.dropped + curr.dropped,
         disqualified: acc.disqualified + curr.disqualified,
         overQuota: acc.overQuota + curr.overQuota,
         qualityTerminate: acc.qualityTerminate + curr.qualityTerminate,
         securityTerminate: acc.securityTerminate + curr.securityTerminate,
     }), {
-        clicked: 0, completed: 0, failed: 0, disqualified: 0,
+        clicked: 0, completed: 0, dropped: 0, disqualified: 0,
         overQuota: 0, qualityTerminate: 0, securityTerminate: 0
     });
 
@@ -107,7 +107,7 @@ export default function SurveyMetricsPage() {
 
     const chartData = [
         { name: 'Completed', value: totalMetrics.completed, color: '#10b981' },
-        { name: 'Failed', value: totalMetrics.failed, color: '#ef4444' },
+        { name: 'Dropped', value: totalMetrics.dropped, color: '#ef4444' },
         { name: 'Disqualified', value: totalMetrics.disqualified, color: '#f59e0b' },
         { name: 'Security Term.', value: totalMetrics.securityTerminate, color: '#6366f1' },
         { name: 'Quality Term.', value: totalMetrics.qualityTerminate, color: '#4f46e5' },
@@ -298,7 +298,7 @@ export default function SurveyMetricsPage() {
 
                 {/* Secondary Metrics Bar */}
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    <MiniMetricCard title="Failed" value={totalMetrics.failed} color="text-rose-600" />
+                    <MiniMetricCard title="Dropped" value={totalMetrics.dropped} color="text-rose-600" />
                     <MiniMetricCard title="Disqualified" value={totalMetrics.disqualified} color="text-amber-600" />
                     <MiniMetricCard title="Over Quota" value={totalMetrics.overQuota} color="text-fuchsia-600" />
                     <MiniMetricCard title="Qual. Term" value={totalMetrics.qualityTerminate} color="text-indigo-600" />
@@ -407,7 +407,7 @@ export default function SurveyMetricsPage() {
                                                 options={[
                                                     { label: 'All', value: '' },
                                                     { label: 'Completed', value: 'COMPLETED' },
-                                                    { label: 'Failed', value: 'FAILED' },
+                                                    { label: 'Dropped', value: 'DROPPED' },
                                                     { label: 'Disqualified', value: 'DISQUALIFIED' },
                                                     { label: 'Quality Terminate', value: 'QUALITY_TERMINATE' },
                                                     { label: 'Security Terminate', value: 'SECURITY_TERMINATE' },
@@ -578,7 +578,7 @@ function MiniMetricCard({ title, value, color }: { title: string, value: string 
 function StatusBadge({ status }: { status: string }) {
     const variants: Record<string, string> = {
         COMPLETED: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-        FAILED: "bg-rose-500/10 text-rose-600 border-rose-500/20",
+        DROPPED: "bg-rose-500/10 text-rose-600 border-rose-500/20",
         DISQUALIFIED: "bg-amber-500/10 text-amber-600 border-amber-500/20",
         QUALITY_TERMINATE: "bg-indigo-500/10 text-indigo-600 border-indigo-500/20",
         SECURITY_TERMINATE: "bg-zinc-500/10 text-zinc-600 border-zinc-500/20",

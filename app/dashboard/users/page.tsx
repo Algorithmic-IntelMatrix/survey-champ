@@ -193,7 +193,7 @@ export default function RespondentsPage() {
 function StatusBadge({ status }: { status: string }) {
     const variants: Record<string, string> = {
         COMPLETED: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-        FAILED: "bg-rose-500/10 text-rose-600 border-rose-500/20",
+        DROPPED: "bg-rose-500/10 text-rose-600 border-rose-500/20",
         DISQUALIFIED: "bg-amber-500/10 text-amber-600 border-amber-500/20",
         QUALITY_TERMINATE: "bg-indigo-500/10 text-indigo-600 border-indigo-500/20",
         SECURITY_TERMINATE: "bg-zinc-500/10 text-zinc-600 border-zinc-500/20",
