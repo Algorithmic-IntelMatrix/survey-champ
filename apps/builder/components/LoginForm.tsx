@@ -8,6 +8,8 @@ import { authApi } from "@/api/auth";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { LoginSchema } from "@surveychamp/common";
+
 export default function LoginForm() {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -26,7 +28,18 @@ export default function LoginForm() {
     setLoading(true);
 
     try {
-      const response = await authApi.login({ email, password });
+      // Validate inputs using SSOT Schema
+      const validation = LoginSchema.safeParse({ email, password });
+
+      if (!validation.success) {
+        // Display the first error message
+        const errorMessage = validation.error.message;
+        toast.error(errorMessage);
+        setLoading(false);
+        return;
+      }
+
+      const response = await authApi.login(validation.data);
       toast.success("Login successful! Welcome back.");
 
       // Store token

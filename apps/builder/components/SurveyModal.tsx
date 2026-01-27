@@ -5,6 +5,7 @@ import { surveyApi } from "@/api/survey";
 import { toast } from "sonner";
 import { IconCheck, IconX } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "motion/react";
+import { createSurveySchema } from "@surveychamp/common";
 
 interface NewSurveyModalProps {
     isOpen: boolean;
@@ -20,12 +21,23 @@ export default function NewSurveyModal({ isOpen, onClose, onSuccess }: NewSurvey
         client: ""
     });
 
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
 
         try {
-            await surveyApi.createSurvey(formData);
+            // Validate using SSOT Schema
+            const validation = createSurveySchema.safeParse(formData);
+
+            if (!validation.success) {
+                const errorMessage = validation.error.message;
+                toast.error(errorMessage);
+                setLoading(false);
+                return;
+            }
+
+            await surveyApi.createSurvey(validation.data);
             toast.success("Survey created successfully!");
             onSuccess();
             onClose();
