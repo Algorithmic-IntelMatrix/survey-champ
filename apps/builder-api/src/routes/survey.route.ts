@@ -15,6 +15,9 @@ router.post("/:surveyId/quotas", authenticate, surveyQuotaController.createQuota
 router.delete("/quotas/:id", authenticate, surveyQuotaController.deleteQuota);
 router.patch("/quotas/:id", authenticate, surveyQuotaController.toggleQuota);
 
+// Public survey endpoint (no authentication required) - for runner-api
+router.get("/:id/public", surveyController.getPublicSurvey);
+
 // Generic ID Routes
 router.get("/:id", authenticate, surveyController.getSurvey);
 router.put("/:id", authenticate, surveyController.updateSurvey);

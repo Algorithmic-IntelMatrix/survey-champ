@@ -59,6 +59,22 @@ export const surveyController = {
         }
     },
 
+    getPublicSurvey : async (req : Request, res : Response) => {
+        try {
+            const surveyId = req.params.id as string;
+            // No authentication required for public survey access
+            const survey = await surveyService.getSurveyById(undefined, surveyId);
+            if(!survey) {
+                console.warn(`Public survey not found: surveyId=${surveyId}`);
+                return res.status(404).json({message: "Survey not found"});
+            }
+            return res.status(200).json(survey);
+        } catch (error) {
+            console.error("Error fetching public survey:", error);
+            return res.status(500).json({message: "An error occurred while fetching survey"});
+        }
+    },
+
     updateSurvey : async (req : Request, res : Response) => {
         try {
             const userId = req.user;

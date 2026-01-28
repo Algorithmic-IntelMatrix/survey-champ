@@ -5,6 +5,8 @@
 /.pnp
 .pnp.*
 .yarn/*
+
+deployment-guide.md
 !.yarn/patches
 !.yarn/plugins
 !.yarn/releases

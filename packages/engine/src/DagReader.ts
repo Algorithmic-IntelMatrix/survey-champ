@@ -1,4 +1,4 @@
-import { LogicGroup, LogicRule } from "@/components/nodes/definitions";
+import { LogicGroup, LogicRule } from "@surveychamp/types/src/survey";
 
 export class DAGReader {
     private graph: Record<string, any>;

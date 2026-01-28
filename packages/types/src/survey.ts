@@ -47,3 +47,19 @@ export interface UpdateResponseParams {
     respondentId?: string;
     redirectUrl?: string;
 }
+
+// Logic types for workflow conditions
+export interface LogicRule {
+    type: 'rule';
+    field: string;
+    subField?: string;
+    operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'gt' | 'lt' | 'is_set' | 'is_empty' | 'is_between' | 'in_range';
+    value: any;
+    valueType?: 'static' | 'variable';
+}
+
+export interface LogicGroup {
+    type: 'group';
+    logicType: 'AND' | 'OR';
+    children: (LogicGroup | LogicRule)[];
+}

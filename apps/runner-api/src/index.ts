@@ -1,22 +1,21 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { upstashRedis } from "@surveychamp/redis";
+import { Redis } from "@upstash/redis/cloudflare";
 import { surveySubmissionSchema } from "@surveychamp/common";
-import { surveyService } from "@surveychamp/backend-core";
 import { v4 as uuidv4 } from "uuid";
+import type { Env } from "./env";
 import responseRoutes from "./routes/response.route";
 import workflowRoutes from "./routes/workflow.route";
 
-import { SYSTEM_CONFIG } from "@surveychamp/common";
-
-const app = new Hono().basePath("/api");
+const app = new Hono<{ Bindings: Env }>().basePath("/api");
 
 // Middleware
 app.use("*", logger());
 app.use("*", cors({
-  origin: (origin) => {
-    const allowedOrigins = [SYSTEM_CONFIG.APP_URL, SYSTEM_CONFIG.SURVEY_URL];
+  origin: (origin, c) => {
+    const env = c.env;
+    const allowedOrigins = [env.APP_URL, env.SURVEY_URL];
     if (!origin || allowedOrigins.includes(origin) || origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:") || origin.match(/^http:\/\/192\.168\.\d+\.\d+:\d+$/)) {
       return origin;
     }
@@ -41,10 +40,16 @@ app.route("/workflows", workflowRoutes);
 app.get("/survey/:id", async (c) => {
   try {
     const { id } = c.req.param();
+    const env = c.env;
+    const redis = new Redis({
+      url: env.UPSTASH_REDIS_REST_URL,
+      token: env.UPSTASH_REDIS_REST_TOKEN,
+    });
+    
     const cacheKey = `survey:${id}`;
 
     // 1. Try Cache
-    const cached = await upstashRedis.get(cacheKey);
+    const cached = await redis.get(cacheKey);
     if (cached) {
       return c.json(typeof cached === 'string' ? JSON.parse(cached) : cached);
     }
@@ -55,17 +60,27 @@ app.get("/survey/:id", async (c) => {
       return c.json(survey);
     }
 
-    // 3. Fallback to DB (only one request gets here)
+    // 3. Fallback to builder-api (only one request gets here)
     const lookupPromise = (async () => {
       try {
-        console.log(`Cache Miss: Fetching survey ${id} from DB`);
-        // Note: Direct DB access from Worker is technically blocked/removed in the plan.
-        // For local dev, this might still work if surveyService uses prisma, 
-        // but for CF Workers, this should ideally hit a internal API or we rely on cache warming.
-        const survey = await surveyService.getSurveyById("PUBLIC_ACCESS", id); 
+        console.log(`Cache Miss: Fetching survey ${id} from builder-api`);
+        
+        // Fetch from builder-api instead of direct DB access
+        const response = await fetch(`${env.BUILDER_API_URL}/api/surveys/${id}/public`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch survey: ${response.statusText}`);
+        }
+
+        const survey = await response.json();
         
         if (survey) {
-          await upstashRedis.set(cacheKey, JSON.stringify(survey), { ex: CACHE_TTL });
+          await redis.set(cacheKey, JSON.stringify(survey), { ex: CACHE_TTL });
         }
         return survey;
       } finally {
@@ -91,6 +106,12 @@ app.get("/survey/:id", async (c) => {
 // Submit Response Endpoint (Producer)
 app.post("/submit", async (c) => {
   try {
+    const env = c.env;
+    const redis = new Redis({
+      url: env.UPSTASH_REDIS_REST_URL,
+      token: env.UPSTASH_REDIS_REST_TOKEN,
+    });
+
     const body = await c.req.json();
     const validationResult = surveySubmissionSchema.safeParse(body);
 
@@ -105,7 +126,7 @@ app.post("/submit", async (c) => {
     const responseId = uuidv4();
 
     // Push to Redis Buffer for Worker processing
-    await upstashRedis.lpush("survey-submissions-buffer", JSON.stringify({
+    await redis.lpush("survey-submissions-buffer", JSON.stringify({
       name: "submission",
       data: {
         id: responseId,
@@ -126,10 +147,5 @@ app.post("/submit", async (c) => {
   }
 });
 
-const port = Number(process.env.PORT) || 4001;
-console.log(`🚀 Runner API (Hono) starting on port ${port}`);
-
-export default {
-  port,
-  fetch: app.fetch,
-};
+// Cloudflare Workers export
+export default app;
