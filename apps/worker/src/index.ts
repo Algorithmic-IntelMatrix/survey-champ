@@ -44,7 +44,7 @@ async function processBatch() {
 
       if (!responseOperations[id]) {
         responseOperations[id] = {
-          data: { id, surveyId, mode, status: ResponseStatus.IN_PROGRESS },
+          data: { id }, // Base data
           isNew: jobName === "start-response" || jobName === "submission",
           metrics: new Set(),
         };
@@ -52,38 +52,57 @@ async function processBatch() {
 
       const op = responseOperations[id];
 
-      // Update data based on job type
+      // Update data based on job type, but ONLY if fields are present
+      // This prevents overwriting existing DB data with undefined/null
+      if (surveyId) op.data.surveyId = surveyId;
+      if (mode) op.data.mode = mode;
+      
       if (jobName === "submission" || jobName === "start-response") {
-        op.data = { ...op.data, surveyId, mode, response, status, outcome, respondentId };
-        if (status) op.metrics.add(status);
-      } else if (jobName === "update-response") {
         if (response !== undefined) op.data.response = response;
-        if (status !== undefined) {
+        if (status) {
           op.data.status = status;
           op.metrics.add(status);
         }
-        if (outcome !== undefined) op.data.outcome = outcome;
-        if (respondentId !== undefined) op.data.respondentId = respondentId;
+        if (outcome) op.data.outcome = outcome;
+        if (respondentId) op.data.respondentId = respondentId;
+      } else if (jobName === "update-response") {
+        if (response !== undefined) op.data.response = response;
+        if (status) {
+          op.data.status = status;
+          op.metrics.add(status);
+        }
+        if (outcome) op.data.outcome = outcome;
+        if (respondentId) op.data.respondentId = respondentId;
       } else if (jobName === "heartbeat") {
         op.data.updatedAt = new Date();
       }
 
       // Aggregate metrics logic (per surveyId and mode)
-      const mKey = `${op.data.surveyId}_${op.data.mode}`;
-      if (!metricsUpdates[mKey]) {
-        metricsUpdates[mKey] = { 
-          surveyId: op.data.surveyId, 
-          mode: op.data.mode,
-          qualityTerminate: 0, securityTerminate: 0, completed: 0, 
-          dropped: 0, disqualified: 0, overQuota: 0, clicked: 0 
-        };
+      // Note: We need surveyId/mode for metrics. If they are missing in this job, 
+      // we try to use what we've accumulated so far for this ID.
+      const currentSurveyId = op.data.surveyId;
+      const currentMode = op.data.mode;
+
+      if (currentSurveyId && currentMode) {
+        const mKey = `${currentSurveyId}_${currentMode}`;
+        if (!metricsUpdates[mKey]) {
+          metricsUpdates[mKey] = { 
+            surveyId: currentSurveyId, 
+            mode: currentMode,
+            qualityTerminate: 0, securityTerminate: 0, completed: 0, 
+            dropped: 0, disqualified: 0, overQuota: 0, clicked: 0 
+          };
+        }
       }
     }
 
     // Now convert the accumulated status changes into metric increments
     for (const id in responseOperations) {
       const op = responseOperations[id];
+      if (!op.data.surveyId || !op.data.mode) continue;
+
       const mKey = `${op.data.surveyId}_${op.data.mode}`;
+      if (!metricsUpdates[mKey]) continue;
       
       op.metrics.forEach(status => {
         if (status === "COMPLETED") metricsUpdates[mKey].completed++;
@@ -98,30 +117,23 @@ async function processBatch() {
 
     // 3. Perform Final DB Operations
     const operations: any[] = [];
-    const newResponses: any[] = [];
-    const updates: any[] = [];
 
     for (const id in responseOperations) {
       const op = responseOperations[id];
-      if (op.isNew) {
-        newResponses.push(op.data);
-      } else {
-        updates.push(op.data);
-      }
-    }
+      const { id: _, ...dataWithoutId } = op.data;
 
-    if (newResponses.length > 0) {
-      operations.push(prisma.surveyResponse.createMany({ 
-        data: newResponses,
-        skipDuplicates: true // Just in case
-      }));
-    }
-
-    for (const updateObj of updates) {
-      const { id, ...data } = updateObj;
-      operations.push(prisma.surveyResponse.update({
+      // Use upsert for EVERY response to handle out-of-order jobs (e.g. heartbeat before start)
+      operations.push(prisma.surveyResponse.upsert({
         where: { id },
-        data: data
+        create: {
+          id,
+          surveyId: op.data.surveyId || "UNKNOWN", // Should be provided by heartbeat/start
+          mode: op.data.mode || Mode.TEST,
+          status: op.data.status || ResponseStatus.IN_PROGRESS,
+          response: op.data.response || {},
+          ...dataWithoutId
+        },
+        update: dataWithoutId
       }));
     }
 
@@ -153,6 +165,13 @@ async function processBatch() {
     console.error("❌ Error processing batch:", error);
   }
 }
+
+// Background Task: Mark stale responses as DROPPED
+import { BackgroundTasksService } from "@surveychamp/backend-core";
+setInterval(async () => {
+    console.log("🧹 Running stale response cleanup...");
+    await BackgroundTasksService.dropStaleResponses();
+}, 60000); // Every minute
 
 const worker = createSurveySubmissionWorker(async (job) => {
   jobBuffer.push(job);

@@ -141,9 +141,20 @@ export const surveyResponseController = {
     heartbeat: async (req: Request, res: Response) => {
         try {
             const id = req.params.id as string;
-            await surveySubmissionQueue.add("heartbeat", { id, timestamp: new Date().toISOString() });
+            
+            // Look up session to get metadata
+            const sessionData = await redis.get(`session:${id}`);
+            const { surveyId, mode } = sessionData ? JSON.parse(sessionData) : { surveyId: null, mode: Mode.TEST };
+
+            await surveySubmissionQueue.add("heartbeat", { 
+                id, 
+                surveyId, 
+                mode, 
+                timestamp: new Date().toISOString() 
+            });
             return res.status(200).json({ status: "ok" });
         } catch (error) {
+            console.error("Heartbeat error:", error);
             return res.status(500).json({ error: "Heartbeat failed" });
         }
     }

@@ -3,9 +3,9 @@ import { prisma, ResponseStatus } from "@surveychamp/db";
 export const BackgroundTasksService = {
     dropStaleResponses: async () => {
         try {
-            // Define what "stale" means. E.g., no update for 2 minutes
+            // Define what "stale" means. E.g., no update for 1 minute
             const staleThreshold = new Date();
-            staleThreshold.setMinutes(staleThreshold.getMinutes() - 2);
+            staleThreshold.setMinutes(staleThreshold.getMinutes() - 1);
 
             // Find responses that are IN_PROGRESS and haven't been updated recently
             const staleResponses = await prisma.surveyResponse.findMany({
