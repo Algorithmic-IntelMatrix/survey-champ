@@ -4,7 +4,7 @@ import { surveyResponseApi } from "@/api/surveyResponse"
 import { useEffect, useState, useMemo, useRef } from "react"
 import { useSearchParams } from "next/navigation"
 import { DAGReader } from "@surveychamp/engine"
-import { IconArrowRight, IconRefresh, IconCheck, IconAlertCircle, IconTimeline, IconUser, IconRobot, IconSend, IconStar, IconCommand } from "@tabler/icons-react"
+import { IconArrowRight, IconCheck, IconAlertCircle, IconUser, IconRobot } from "@tabler/icons-react"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { ChoiceNode } from "./nodes/ChoiceNode"
@@ -28,7 +28,6 @@ interface Message {
 
 export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
     const [workflow, setWorkflow] = useState<any>(null);
-    const [status, setStatus] = useState<string>('DRAFT');
     const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
     const [responseId, setResponseId] = useState<string | null>(null);
     const [responses, setResponses] = useState<Record<string, any>>({});

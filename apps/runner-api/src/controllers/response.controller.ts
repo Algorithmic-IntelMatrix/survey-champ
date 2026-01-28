@@ -53,6 +53,7 @@ export const surveyResponseController = {
                 id: responseId,
                 surveyId,
                 mode: currentMode,
+                status: ResponseStatus.CLICKED,
                 respondentId: respondentId || undefined,
                 timestamp: new Date().toISOString()
             });

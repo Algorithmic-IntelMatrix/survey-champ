@@ -1,5 +1,6 @@
 import { createSurveySubmissionWorker } from "@surveychamp/queue";
 import { Mode, prisma, ResponseStatus } from "@surveychamp/db";
+import { redis } from "@surveychamp/redis";
 
 console.log("🚀 SurveyChamp Worker starting...");
 
@@ -104,23 +105,45 @@ async function processBatch() {
       const mKey = `${op.data.surveyId}_${op.data.mode}`;
       if (!metricsUpdates[mKey]) continue;
       
-      op.metrics.forEach(status => {
-        if (status === "COMPLETED") metricsUpdates[mKey].completed++;
-        else if (status === "DROPPED") metricsUpdates[mKey].dropped++;
-        else if (status === "DISQUALIFIED") metricsUpdates[mKey].disqualified++;
-        else if (status === "OVER_QUOTA") metricsUpdates[mKey].overQuota++;
-        else if (status === "CLICKED") metricsUpdates[mKey].clicked++;
-        else if (status === "QUALITY_TERMINATE") metricsUpdates[mKey].qualityTerminate++;
-        else if (status === "SECURITY_TERMINATE") metricsUpdates[mKey].securityTerminate++;
-      });
+      for (const status of op.metrics) {
+        // De-duplication: check if this specific status for this responseId was already counted
+        const dedupeKey = `metric_counted:${id}:${status}`;
+        const alreadyCounted = await redis.get(dedupeKey);
+        
+        if (!alreadyCounted) {
+            if (status === "COMPLETED") metricsUpdates[mKey].completed++;
+            else if (status === "DROPPED") metricsUpdates[mKey].dropped++;
+            else if (status === "DISQUALIFIED") metricsUpdates[mKey].disqualified++;
+            else if (status === "OVER_QUOTA") metricsUpdates[mKey].overQuota++;
+            else if (status === "CLICKED") metricsUpdates[mKey].clicked++;
+            else if (status === "QUALITY_TERMINATE") metricsUpdates[mKey].qualityTerminate++;
+            else if (status === "SECURITY_TERMINATE") metricsUpdates[mKey].securityTerminate++;
+            
+            // Mark as counted in Redis (expiry 7 days)
+            await redis.set(dedupeKey, "1", "EX", 604800);
+        }
+      }
     }
 
     // 3. Perform Final DB Operations
     const operations: any[] = [];
+    const terminalIds = new Set<string>();
+    const terminalStatuses = [
+        ResponseStatus.COMPLETED, 
+        ResponseStatus.DROPPED, 
+        ResponseStatus.DISQUALIFIED, 
+        ResponseStatus.OVER_QUOTA, 
+        ResponseStatus.QUALITY_TERMINATE, 
+        ResponseStatus.SECURITY_TERMINATE
+    ];
 
     for (const id in responseOperations) {
       const op = responseOperations[id];
       const { id: _, ...dataWithoutId } = op.data;
+
+      if (op.data.status && terminalStatuses.includes(op.data.status as any)) {
+          terminalIds.add(id);
+      }
 
       // Use upsert for EVERY response to handle out-of-order jobs (e.g. heartbeat before start)
       operations.push(prisma.surveyResponse.upsert({
@@ -158,6 +181,19 @@ async function processBatch() {
 
     if (operations.length > 0) {
       await prisma.$transaction(operations);
+      
+      // Post-Sync Redis Cleanup
+      if (terminalIds.size > 0) {
+          console.log(`🧹 Clearing Redis for ${terminalIds.size} terminal sessions...`);
+          for (const id of terminalIds) {
+              const keysToDelete = [
+                  `session:${id}`,
+                  ...terminalStatuses.map(s => `metric_counted:${id}:${s}`),
+                  `metric_counted:${id}:CLICKED` // Also clear clicked tracking
+              ];
+              await redis.del(...keysToDelete);
+          }
+      }
     }
 
     console.log(`✅ Batch processed successfully`);
