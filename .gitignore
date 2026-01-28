@@ -19,6 +19,8 @@ deployment-guide.md
 /.next/
 /out/
 
+DOCKER_HUB_DEPLOYMENT.md
+
 apps/builder/.next/
 apps/runner/.next/
 
