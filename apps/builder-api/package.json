@@ -1,0 +1,35 @@
+{
+    "name": "@surveychamp/builder-api",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "bun --watch src/index.ts",
+        "start": "bun src/index.ts"
+    },
+    "dependencies": {
+        "@aws-sdk/client-s3": "^3.975.0",
+        "@aws-sdk/s3-request-presigner": "^3.975.0",
+        "@bull-board/api": "^6.16.4",
+        "@bull-board/express": "^6.16.4",
+        "@surveychamp/backend-core": "workspace:*",
+        "@surveychamp/common": "workspace:*",
+        "@surveychamp/db": "workspace:*",
+        "@surveychamp/queue": "workspace:*",
+        "@surveychamp/redis": "workspace:*",
+        "bcrypt": "^6.0.0",
+        "cookie-parser": "^1.4.7",
+        "cors": "^2.8.5",
+        "express": "^5.0.0",
+        "helmet": "^8.0.0",
+        "jsonwebtoken": "^9.0.3",
+        "uuid": "^13.0.0"
+    },
+    "devDependencies": {
+        "@types/bcrypt": "^6.0.0",
+        "@types/cookie-parser": "^1.4.6",
+        "@types/cors": "^2.8.17",
+        "@types/express": "^5.0.0",
+        "@types/jsonwebtoken": "^9.0.10",
+        "@types/uuid": "^11.0.0"
+    }
+}

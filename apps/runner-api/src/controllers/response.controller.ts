@@ -1,0 +1,181 @@
+import { ResponseStatus, Mode } from "@surveychamp/db"; 
+import { upstashRedis } from "@surveychamp/redis";
+import { v4 as uuidv4 } from 'uuid';
+import type { Context } from "hono";
+import { getSignedCookie, setSignedCookie } from 'hono/cookie';
+
+const COOKIE_SECRET = process.env.JWT_SECRET || "survey_champ_secret";
+
+export const surveyResponseController = {
+    getMetricsBySurveyId: async (c: Context) => {
+        const { surveyId } = c.req.param() as { surveyId: string };
+        try {
+            const cacheKey = `metrics:${surveyId}`;
+            const cached = await upstashRedis.get(cacheKey);
+            if (cached) return c.json({ data: typeof cached === 'string' ? JSON.parse(cached) : cached });
+            
+            return c.json({ data: [] }); 
+        } catch (error) {
+            return c.json({ error: "Internal Server Error" }, 500);
+        }
+    },
+
+    getResponsesBySurveyId: async (c: Context) => {
+        const { surveyId } = c.req.param() as { surveyId: string };
+        try {
+            const cacheKey = `responses:${surveyId}`;
+            const cached = await upstashRedis.get(cacheKey);
+            if (cached) return c.json({ data: typeof cached === 'string' ? JSON.parse(cached) : cached });
+            
+            return c.json({ data: [] });
+        } catch (error) {
+            return c.json({ error: "Internal Server Error" }, 500);
+        }
+    },
+
+    startResponse: async (c: Context) => {
+        try {
+            const { id, surveyId, mode, respondentId } = await c.req.json();
+            if (!surveyId) return c.json({ error: "surveyId is required" }, 400);
+
+            const responseId = id || uuidv4();
+            const currentMode = mode || Mode.TEST;
+
+            // Push "start" event and store session in a single pipeline
+            await upstashRedis.pipeline()
+                .lpush("survey-submissions-buffer", JSON.stringify({
+                    name: "start-response",
+                    data: {
+                        id: responseId,
+                        surveyId,
+                        mode: currentMode,
+                        status: ResponseStatus.IN_PROGRESS, // Changed from CLICKED - CLICKED is a metric, not a status
+                        respondentId: respondentId || undefined,
+                        timestamp: new Date().toISOString()
+                    }
+                }))
+                .set(`session:${responseId}`, JSON.stringify({ surveyId, mode: currentMode }), { ex: 86400 })
+                .exec();
+
+            // Store stateless session in a signed cookie (removes Redis lookups for future answers)
+            await setSignedCookie(c, `sess_${responseId}`, JSON.stringify({ surveyId, mode: currentMode }), COOKIE_SECRET, {
+                path: '/',
+                httpOnly: true,
+                secure: true,
+                sameSite: 'None',
+                maxAge: 86400 // 1 day
+            });
+
+            return c.json({ 
+                data: { 
+                    id: responseId, 
+                    surveyId, 
+                    mode: currentMode,
+                    status: ResponseStatus.IN_PROGRESS 
+                } 
+            }, 201);
+        } catch (error) {
+            console.error("Error starting response:", error);
+            return c.json({ error: "Internal Server Error" }, 500);
+        }
+    },
+
+    updateResponse: async (c: Context) => {
+        try {
+            const { id } = c.req.param() as { id: string };
+            const { response: responseJson, status, respondentId, outcome, redirectUrl: customRedirectUrl } = await c.req.json();
+
+            if (!id) return c.json({ error: "Response ID is required" }, 400);
+
+            // 1. Try Stateless Cookie first (Fast, 0 commands)
+            let sessionData = await getSignedCookie(c, COOKIE_SECRET, `sess_${id}`);
+            let surveyId, mode;
+
+            if (sessionData) {
+                const parsed = typeof sessionData === 'string' ? JSON.parse(sessionData) : sessionData;
+                surveyId = parsed.surveyId;
+                mode = parsed.mode;
+            } else {
+                // 2. Fallback to Redis (1 command)
+                const redisSession = await upstashRedis.get(`session:${id}`);
+                const parsed = redisSession ? (typeof redisSession === 'string' ? JSON.parse(redisSession) : redisSession) : { surveyId: null, mode: Mode.TEST };
+                surveyId = parsed.surveyId;
+                mode = parsed.mode;
+            }
+
+            // Queue the update (1 command)
+            await upstashRedis.lpush("survey-submissions-buffer", JSON.stringify({
+                name: "update-response",
+                data: {
+                    id,
+                    surveyId,
+                    mode,
+                    response: responseJson,
+                    status,
+                    outcome,
+                    respondentId,
+                    timestamp: new Date().toISOString()
+                }
+            }));
+
+            // Resolve Redirect URL
+            let finalRedirectUrl = customRedirectUrl;
+            
+            if (!finalRedirectUrl && status && status !== ResponseStatus.IN_PROGRESS && surveyId) {
+                const surveyCache = await upstashRedis.get(`survey:${surveyId}`);
+                if (surveyCache) {
+                    const survey = typeof surveyCache === 'string' ? JSON.parse(surveyCache) : surveyCache;
+                    if (status === ResponseStatus.DROPPED) finalRedirectUrl = survey.redirectUrl;
+                    else if (status === ResponseStatus.OVER_QUOTA) finalRedirectUrl = survey.overQuotaUrl;
+                    else if (status === ResponseStatus.SECURITY_TERMINATE) finalRedirectUrl = survey.securityTerminateUrl;
+                }
+            }
+
+            if (finalRedirectUrl) {
+                finalRedirectUrl = finalRedirectUrl
+                    .replace(/\[%%PID%%\]/gi, id)
+                    .replace(/\[%%transactionid%%\]/gi, id);
+            }
+
+            return c.json({ 
+                success: true,
+                redirectUrl: finalRedirectUrl || null
+            });
+
+        } catch (error: any) {
+            console.error(error);
+            return c.json({ error: "Internal Server Error" }, 500);
+        }
+    },
+
+    heartbeat: async (c: Context) => {
+        try {
+            const { id } = c.req.param() as { id: string };
+            
+            // Try cookie first
+            let sessionData = await getSignedCookie(c, COOKIE_SECRET, `sess_${id}`);
+            let surveyId, mode;
+
+            if (sessionData) {
+                const parsed = typeof sessionData === 'string' ? JSON.parse(sessionData) : sessionData;
+                surveyId = parsed.surveyId;
+                mode = parsed.mode;
+            } else {
+                const redisSession = await upstashRedis.get(`session:${id}`);
+                const parsed = redisSession ? (typeof redisSession === 'string' ? JSON.parse(redisSession) : redisSession) : { surveyId: null, mode: Mode.TEST };
+                surveyId = parsed.surveyId;
+                mode = parsed.mode;
+            }
+
+            await upstashRedis.lpush("survey-submissions-buffer", JSON.stringify({
+                name: "heartbeat",
+                data: { id, surveyId, mode, timestamp: new Date().toISOString() }
+            }));
+
+            return c.json({ status: "ok" });
+        } catch (error) {
+            console.error("Heartbeat error:", error);
+            return c.json({ error: "Heartbeat failed" }, 500);
+        }
+    }
+};

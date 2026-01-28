@@ -5,8 +5,6 @@
 /.pnp
 .pnp.*
 .yarn/*
-
-deployment-guide.md
 !.yarn/patches
 !.yarn/plugins
 !.yarn/releases
@@ -18,12 +16,6 @@ deployment-guide.md
 # next.js
 /.next/
 /out/
-
-apps/builder/.next/
-apps/runner/.next/
-
-apps/builder-api/node_modules/
-apps/runner-api/node_modules/
 
 # production
 /build

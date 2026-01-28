@@ -1,0 +1,15 @@
+{
+    "name": "@surveychamp/worker",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "bun --watch src/index.ts",
+        "start": "bun src/index.ts"
+    },
+    "dependencies": {
+        "@surveychamp/common": "workspace:*",
+        "@surveychamp/db": "workspace:*",
+        "@surveychamp/queue": "workspace:*",
+        "@surveychamp/redis": "workspace:*"
+    }
+}

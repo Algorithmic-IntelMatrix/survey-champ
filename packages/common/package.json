@@ -1,0 +1,14 @@
+{
+  "name": "@surveychamp/common",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "dependencies": {
+    "jsonwebtoken": "^9.0.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10"
+  }
+}
