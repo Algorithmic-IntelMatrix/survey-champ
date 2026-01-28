@@ -61,6 +61,9 @@ export const surveyResponseController = {
             const metricKey = `metrics_counter:${surveyId}:${currentMode}:clicked`;
             await redis.incr(metricKey);
 
+            // Store session metadata in Redis for lookups in updateResponse
+            await redis.set(`session:${responseId}`, JSON.stringify({ surveyId, mode: currentMode }), "EX", 86400); // 24 hours
+
             return res.status(201).json({ 
                 data: { 
                     id: responseId, 
@@ -78,22 +81,24 @@ export const surveyResponseController = {
     updateResponse: async (req: Request, res: Response) => {
         try {
             const { id } = req.params as { id: string };
-            const { response: responseJson, status, respondentId, outcome } = req.body;
+            const { response: responseJson, status, respondentId, outcome, redirectUrl: customRedirectUrl } = req.body;
 
             if (!id) return res.status(400).json({ error: "Response ID is required" });
 
-            // 1. Quota Check (Redis based)
-            // If the status is COMPLETED, we check the atomic counter in Redis
-            if (status === ResponseStatus.COMPLETED) {
-                // We need the survey config to check quotas.
-                // This would be cached in 'survey:{id}'
-                // For now, we assume global quota lookup from Redis
-                // (Logic will be refined in the next tool call)
+            // 1. Fetch session from Redis to get surveyId and mode
+            const sessionData = await redis.get(`session:${id}`);
+            const { surveyId, mode } = sessionData ? JSON.parse(sessionData) : { surveyId: null, mode: Mode.TEST };
+
+            // 2. Quota Check (Redis based)
+            if (status === ResponseStatus.COMPLETED && surveyId) {
+                // ... logic to be refined ...
             }
 
-            // 2. Queue the update
+            // 3. Queue the update
             await surveySubmissionQueue.add("update-response", {
                 id,
+                surveyId, // Include for worker's convenience
+                mode,
                 response: responseJson,
                 status,
                 outcome,
@@ -101,16 +106,31 @@ export const surveyResponseController = {
                 timestamp: new Date().toISOString()
             });
 
-            // 3. Handle Metric Increments in Redis (Atomic)
-            if (status && status !== ResponseStatus.IN_PROGRESS && status !== ResponseStatus.CLICKED) {
-                // This would need surveyId and mode, which usually comes from current session state.
-                // In a pure serverless Runner, we might include these in the payload from Frontend 
-                // or look up session in Redis. 
-                // For now, let the Worker handle the persistent metrics record, 
-                // but increment the "hot" counter in Redis if available.
+            // 4. Resolve Redirect URL
+            let finalRedirectUrl = customRedirectUrl;
+            
+            if (!finalRedirectUrl && status && status !== ResponseStatus.IN_PROGRESS && surveyId) {
+                // Cache hit for survey config
+                const surveyCache = await redis.get(`survey:${surveyId}`);
+                if (surveyCache) {
+                    const survey = JSON.parse(surveyCache);
+                    if (status === ResponseStatus.DROPPED) finalRedirectUrl = survey.redirectUrl;
+                    else if (status === ResponseStatus.OVER_QUOTA) finalRedirectUrl = survey.overQuotaUrl;
+                    else if (status === ResponseStatus.SECURITY_TERMINATE) finalRedirectUrl = survey.securityTerminateUrl;
+                }
             }
 
-            return res.status(200).json({ success: true });
+            // Replace placeholders in the redirect URL
+            if (finalRedirectUrl) {
+                finalRedirectUrl = finalRedirectUrl
+                    .replace(/\[%%PID%%\]/gi, id)
+                    .replace(/\[%%transactionid%%\]/gi, id);
+            }
+
+            return res.status(200).json({ 
+                success: true,
+                redirectUrl: finalRedirectUrl || null
+            });
 
         } catch (error: any) {
             console.error(error);
