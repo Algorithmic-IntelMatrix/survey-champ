@@ -3,7 +3,7 @@ import { prisma, ResponseStatus } from "@surveychamp/db";
 export const BackgroundTasksService = {
     dropStaleResponses: async () => {
         try {
-            // Define what "stale" means. E.g., no update for 1 minute
+            // Define what "stale" means. E.g., no update for 1 minutes
             const staleThreshold = new Date();
             staleThreshold.setMinutes(staleThreshold.getMinutes() - 1);
 

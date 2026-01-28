@@ -2,6 +2,9 @@ import { ResponseStatus, Mode } from "@surveychamp/db";
 import { upstashRedis } from "@surveychamp/redis";
 import { v4 as uuidv4 } from 'uuid';
 import type { Context } from "hono";
+import { getSignedCookie, setSignedCookie } from 'hono/cookie';
+
+const COOKIE_SECRET = process.env.JWT_SECRET || "survey_champ_secret";
 
 export const surveyResponseController = {
     getMetricsBySurveyId: async (c: Context) => {
@@ -46,13 +49,22 @@ export const surveyResponseController = {
                         id: responseId,
                         surveyId,
                         mode: currentMode,
-                        status: ResponseStatus.CLICKED,
+                        status: ResponseStatus.IN_PROGRESS, // Changed from CLICKED - CLICKED is a metric, not a status
                         respondentId: respondentId || undefined,
                         timestamp: new Date().toISOString()
                     }
                 }))
                 .set(`session:${responseId}`, JSON.stringify({ surveyId, mode: currentMode }), { ex: 86400 })
                 .exec();
+
+            // Store stateless session in a signed cookie (removes Redis lookups for future answers)
+            await setSignedCookie(c, `sess_${responseId}`, JSON.stringify({ surveyId, mode: currentMode }), COOKIE_SECRET, {
+                path: '/',
+                httpOnly: true,
+                secure: true,
+                sameSite: 'None',
+                maxAge: 86400 // 1 day
+            });
 
             return c.json({ 
                 data: { 
@@ -75,10 +87,23 @@ export const surveyResponseController = {
 
             if (!id) return c.json({ error: "Response ID is required" }, 400);
 
-            const sessionData = await upstashRedis.get(`session:${id}`);
-            const { surveyId, mode } = sessionData ? (typeof sessionData === 'string' ? JSON.parse(sessionData) : sessionData) : { surveyId: null, mode: Mode.TEST };
+            // 1. Try Stateless Cookie first (Fast, 0 commands)
+            let sessionData = await getSignedCookie(c, COOKIE_SECRET, `sess_${id}`);
+            let surveyId, mode;
 
-            // Queue the update
+            if (sessionData) {
+                const parsed = typeof sessionData === 'string' ? JSON.parse(sessionData) : sessionData;
+                surveyId = parsed.surveyId;
+                mode = parsed.mode;
+            } else {
+                // 2. Fallback to Redis (1 command)
+                const redisSession = await upstashRedis.get(`session:${id}`);
+                const parsed = redisSession ? (typeof redisSession === 'string' ? JSON.parse(redisSession) : redisSession) : { surveyId: null, mode: Mode.TEST };
+                surveyId = parsed.surveyId;
+                mode = parsed.mode;
+            }
+
+            // Queue the update (1 command)
             await upstashRedis.lpush("survey-submissions-buffer", JSON.stringify({
                 name: "update-response",
                 data: {
@@ -127,8 +152,20 @@ export const surveyResponseController = {
         try {
             const { id } = c.req.param() as { id: string };
             
-            const sessionData = await upstashRedis.get(`session:${id}`);
-            const { surveyId, mode } = sessionData ? (typeof sessionData === 'string' ? JSON.parse(sessionData) : sessionData) : { surveyId: null, mode: Mode.TEST };
+            // Try cookie first
+            let sessionData = await getSignedCookie(c, COOKIE_SECRET, `sess_${id}`);
+            let surveyId, mode;
+
+            if (sessionData) {
+                const parsed = typeof sessionData === 'string' ? JSON.parse(sessionData) : sessionData;
+                surveyId = parsed.surveyId;
+                mode = parsed.mode;
+            } else {
+                const redisSession = await upstashRedis.get(`session:${id}`);
+                const parsed = redisSession ? (typeof redisSession === 'string' ? JSON.parse(redisSession) : redisSession) : { surveyId: null, mode: Mode.TEST };
+                surveyId = parsed.surveyId;
+                mode = parsed.mode;
+            }
 
             await upstashRedis.lpush("survey-submissions-buffer", JSON.stringify({
                 name: "heartbeat",

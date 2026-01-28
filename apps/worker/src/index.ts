@@ -1,6 +1,5 @@
-import { createSurveySubmissionWorker } from "@surveychamp/queue";
 import { Mode, prisma, ResponseStatus } from "@surveychamp/db";
-import { redis } from "@surveychamp/redis";
+import { redis, upstashRedis } from "@surveychamp/redis";
 
 console.log("🚀 SurveyChamp Worker starting...");
 
@@ -53,8 +52,6 @@ async function processBatch() {
 
       const op = responseOperations[id];
 
-      // Update data based on job type, but ONLY if fields are present
-      // This prevents overwriting existing DB data with undefined/null
       if (surveyId) op.data.surveyId = surveyId;
       if (mode) op.data.mode = mode;
       
@@ -97,6 +94,7 @@ async function processBatch() {
       }
     }
 
+
     // Now convert the accumulated status changes into metric increments
     for (const id in responseOperations) {
       const op = responseOperations[id];
@@ -105,10 +103,28 @@ async function processBatch() {
       const mKey = `${op.data.surveyId}_${op.data.mode}`;
       if (!metricsUpdates[mKey]) continue;
       
+      // Explicitly add CLICKED if this is a new session start
+      if (op.isNew) {
+          op.metrics.add(ResponseStatus.CLICKED);
+      } else if (!op.metrics.has(ResponseStatus.CLICKED)) {
+          // If we never added CLICKED yet, check if this is the first time we're seeing this response
+          // This happens when start-response was already consumed before worker restart
+          op.metrics.add(ResponseStatus.CLICKED);
+      }
+
       for (const status of op.metrics) {
         // De-duplication: check if this specific status for this responseId was already counted
         const dedupeKey = `metric_counted:${id}:${status}`;
-        const alreadyCounted = await redis.get(dedupeKey);
+        
+        let alreadyCounted = null;
+        try {
+          alreadyCounted = await upstashRedis.get(dedupeKey);
+          console.log(`[DEBUG] Dedup check result: ${alreadyCounted}`);
+        } catch (error) {
+          console.error(`[DEBUG] Redis GET failed for ${dedupeKey}:`, error);
+          // Assume not counted if Redis fails
+          alreadyCounted = null;
+        }
         
         if (!alreadyCounted) {
             if (status === "COMPLETED") metricsUpdates[mKey].completed++;
@@ -120,7 +136,11 @@ async function processBatch() {
             else if (status === "SECURITY_TERMINATE") metricsUpdates[mKey].securityTerminate++;
             
             // Mark as counted in Redis (expiry 7 days)
-            await redis.set(dedupeKey, "1", "EX", 604800);
+            try {
+              await upstashRedis.set(dedupeKey, "1", { ex: 604800 });
+            } catch (error) {
+              console.error(`[DEBUG] Redis SET failed for ${dedupeKey}:`, error);
+            }
         }
       }
     }
@@ -145,7 +165,6 @@ async function processBatch() {
           terminalIds.add(id);
       }
 
-      // Use upsert for EVERY response to handle out-of-order jobs (e.g. heartbeat before start)
       operations.push(prisma.surveyResponse.upsert({
         where: { id },
         create: {
@@ -184,21 +203,21 @@ async function processBatch() {
       
       // Post-Sync Redis Cleanup
       if (terminalIds.size > 0) {
-          console.log(`🧹 Clearing Redis for ${terminalIds.size} terminal sessions...`);
           for (const id of terminalIds) {
               const keysToDelete = [
                   `session:${id}`,
                   ...terminalStatuses.map(s => `metric_counted:${id}:${s}`),
-                  `metric_counted:${id}:CLICKED` // Also clear clicked tracking
+                  `metric_counted:${id}:CLICKED`
               ];
-              await redis.del(...keysToDelete);
+              await upstashRedis.del(...keysToDelete);
           }
       }
     }
-
-    console.log(`✅ Batch processed successfully`);
   } catch (error) {
-    console.error("❌ Error processing batch:", error);
+    console.error(error);
+    if (error instanceof Error) {
+      console.error("Error stack:", error.stack);
+    }
   }
 }
 
@@ -209,32 +228,28 @@ setInterval(async () => {
     await BackgroundTasksService.dropStaleResponses();
 }, 60000); // Every minute
 
-const worker = createSurveySubmissionWorker(async (job) => {
-  jobBuffer.push(job);
-
-  if (jobBuffer.length >= BATCH_SIZE) {
-    await processBatch();
-  } else if (!batchTimeout) {
-    batchTimeout = setTimeout(processBatch, BATCH_INTERVAL_MS);
-  }
-
-  return { status: "buffered" };
-});
-
 // Redis Buffer Bridge (Edge -> Worker)
-// This polls the simple Redis list populated by the Edge API
+// TCP Redis with BRPOP (blocking, zero idle cost!)
 async function pollRedisBuffer() {
-  console.log("📥 Redis Buffer Bridge started...");
+  console.log("📥 Redis Buffer Bridge started (TCP Mode with BRPOP)...");
+
   while (true) {
     try {
-      // BRPOP blocks for up to 5 seconds
-      const result = await redis.brpop("survey-submissions-buffer", 5);
-      
+      // BRPOP blocks indefinitely until a job arrives (zero command cost while waiting!)
+      const result = await redis.brpop("survey-submissions-buffer", 0);
+      console.log("📥 Redis Buffer Bridge received job!", result);
       if (result) {
         const [_, payload] = result;
-        const job = JSON.parse(payload);
+        console.log("📥 Redis Buffer Bridge received job!");
         
-        // Push fake "job" to buffer to reuse existing processBatch logic
+        let job;
+        try {
+          job = JSON.parse(payload);
+        } catch (e) {
+          console.error("❌ Failed to parse job:", payload, e);
+          continue;
+        }
+        
         jobBuffer.push(job);
 
         // Immediate trigger if buffer is full
@@ -246,17 +261,9 @@ async function pollRedisBuffer() {
       }
     } catch (error) {
       console.error("❌ Error in Redis Buffer Bridge:", error);
-      await new Promise(resolve => setTimeout(resolve, 5000)); // Wait before retry
+      await new Promise(resolve => setTimeout(resolve, 5000));
     }
   }
 }
 
 pollRedisBuffer();
-
-worker.on("completed", (job) => {
-  // Job completed logic if needed
-});
-
-worker.on("failed", (job, err) => {
-  console.error(`❌ Job ${job?.id} failed:`, err);
-});
