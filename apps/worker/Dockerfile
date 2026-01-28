@@ -1,28 +1,40 @@
-FROM oven/bun:1.2-slim
+FROM oven/bun:1.2-slim AS builder
 
 WORKDIR /app
 
-# Copy the monorepo files
+# Copy all package files for workspace resolution
 COPY package.json bun.lock ./
+COPY packages/db/package.json ./packages/db/
+COPY packages/redis/package.json ./packages/redis/
+COPY packages/backend-core/package.json ./packages/backend-core/
+COPY apps/worker/package.json ./apps/worker/
+
+# Install dependencies (uncached, for Prisma generation)
 COPY packages/ ./packages/
 COPY apps/worker/ ./apps/worker/
-
-# Install dependencies
-RUN bun install
 
 # Install OpenSSL (required by Prisma)
 RUN apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
+RUN bun install
+
 # Generate Prisma Client
 WORKDIR /app/packages/db
-# Provide a placeholder DATABASE_URL for build-time generation
-# The actual DATABASE_URL will be used at runtime
 ARG DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder?schema=public"
 ENV DATABASE_URL=${DATABASE_URL}
 RUN bun run db:generate
 
-# Set working directory to the worker app
+# Production stage
+FROM oven/bun:1.2-slim
+
+WORKDIR /app
+
+# Install only runtime dependencies (OpenSSL for Prisma)
+RUN apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+
+# Copy from builder
+COPY --from=builder /app ./
+
 WORKDIR /app/apps/worker
 
-# Run the worker
 CMD ["bun", "run", "start"]
