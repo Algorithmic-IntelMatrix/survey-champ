@@ -26,7 +26,7 @@ export interface SurveyWorkflow {
 export interface SurveyQuota {
     id: string;
     surveyId: string;
-    rule: { nodeId: string; subField?: string; operator: string; value: any };
+    rule: any; // Can be LogicGroup or a simple rule object
     limit: number;
     enabled: boolean;
     createdAt: string;

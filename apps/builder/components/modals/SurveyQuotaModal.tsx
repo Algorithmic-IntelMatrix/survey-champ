@@ -4,9 +4,12 @@ import { surveyApi } from "@/api/survey";
 import { SurveyQuota, SurveyWorkflow } from "@surveychamp/types";
 import { surveyWorkflowApi } from "@/api/surveyWorkflow";
 import { toast } from "sonner";
-import { IconPlus, IconTrash, IconToggleLeft, IconToggleRight, IconAlertCircle, IconX } from "@tabler/icons-react";
-import { cn } from "@/lib/utils";
+import { IconPlus, IconTrash, IconToggleLeft, IconToggleRight, IconAlertCircle, IconX, IconSettings } from "@tabler/icons-react";
+import { cn, generateUniqueId } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { ConditionBuilder } from "../properties/ConditionBuilder";
+import { LogicGroup, getNodeDefinition } from "../nodes/definitions";
+import { Node } from "@xyflow/react";
 
 interface SurveyQuotaModalProps {
     isOpen: boolean;
@@ -14,38 +17,33 @@ interface SurveyQuotaModalProps {
     surveyId: string;
 }
 
-interface QuestionNode {
-    id: string;
-    label: string;
-    type: string;
-    options?: any[];
-    data?: any;
-}
-
 export function SurveyQuotaModal({ isOpen, onClose, surveyId }: SurveyQuotaModalProps) {
     const [quotas, setQuotas] = useState<SurveyQuota[]>([]);
     const [loading, setLoading] = useState(false);
-    const [nodes, setNodes] = useState<QuestionNode[]>([]);
+    const [flowNodes, setFlowNodes] = useState<Node[]>([]);
 
     // Internal Add Form State
     const [isAdding, setIsAdding] = useState(false);
-    const [newQuota, setNewQuota] = useState({
-        nodeId: "",
-        subField: "",
-        operator: "equals",
-        value: "",
-        limit: ""
+    const [newQuota, setNewQuota] = useState<{
+        limit: string;
+        logic: LogicGroup;
+    }>({
+        limit: "",
+        logic: {
+            id: 'root',
+            type: 'group',
+            logicType: 'AND',
+            children: []
+        }
     });
 
     useEffect(() => {
-        console.log("Survey Quota Modal useEffect called", isOpen, surveyId);
         if (isOpen && surveyId) {
             fetchData();
         }
     }, [isOpen, surveyId]);
 
     const fetchData = async () => {
-        console.log("Fetching data");
         setLoading(true);
         try {
             const [quotasData, workflowData] = await Promise.all([
@@ -55,19 +53,14 @@ export function SurveyQuotaModal({ isOpen, onClose, surveyId }: SurveyQuotaModal
             setQuotas(quotasData);
 
             if (workflowData?.runtimeJson) {
-                const nodeList: QuestionNode[] = [];
-                Object.values(workflowData.runtimeJson).forEach((node: any) => {
-                    if (node.type !== 'start' && node.type !== 'end' && node.type !== 'branch' && node.data?.label) {
-                        nodeList.push({
-                            id: node.id,
-                            label: node.data.label,
-                            type: node.type,
-                            options: node.data.options,
-                            data: node.data // Store full data for complex extractions
-                        });
-                    }
-                });
-                setNodes(nodeList);
+                // Convert runtimeJson back to Node[] format for ConditionBuilder
+                const mappedNodes: Node[] = Object.values(workflowData.runtimeJson).map((n: any) => ({
+                    id: n.id,
+                    type: n.type,
+                    data: n.data,
+                    position: { x: 0, y: 0 }
+                }));
+                setFlowNodes(mappedNodes);
             }
         } catch (error) {
             toast.error("Failed to load quotas");
@@ -77,29 +70,25 @@ export function SurveyQuotaModal({ isOpen, onClose, surveyId }: SurveyQuotaModal
     };
 
     const handleCreate = async () => {
-        console.log("Handle Create is being called")
-        if (!newQuota.nodeId || !newQuota.value || !newQuota.limit) {
-            toast.error("Please fill all fields");
+        if (!newQuota.limit || newQuota.logic.children.length === 0) {
+            toast.error("Please add at least one condition and set a limit.");
             return;
         }
 
         try {
             const created = await surveyApi.createQuota(surveyId, {
-                rule: {
-                    nodeId: newQuota.nodeId,
-                    subField: newQuota.subField || undefined,
-                    operator: newQuota.operator,
-                    value: newQuota.value
-                },
+                rule: newQuota.logic,
                 limit: parseInt(newQuota.limit),
                 enabled: true
             });
             setQuotas([created, ...quotas]);
             setIsAdding(false);
-            setNewQuota({ nodeId: "", subField: "", operator: "equals", value: "", limit: "" });
+            setNewQuota({
+                limit: "",
+                logic: { id: 'root', type: 'group', logicType: 'AND', children: [] }
+            });
             toast.success("Quota created");
         } catch (error) {
-            console.error(error);
             toast.error("Failed to create quota");
         }
     };
@@ -124,7 +113,7 @@ export function SurveyQuotaModal({ isOpen, onClose, surveyId }: SurveyQuotaModal
         }
     };
 
-    const getNodeLabel = (nodeId: string) => nodes.find(n => n.id === nodeId)?.label || nodeId;
+    const getNodeLabel = (nodeId: string) => flowNodes.find((n: Node) => n.id === nodeId)?.data?.label || nodeId;
 
     return (
         <AnimatePresence>
@@ -168,144 +157,77 @@ export function SurveyQuotaModal({ isOpen, onClose, surveyId }: SurveyQuotaModal
                                     {/* Add Form */}
                                     {isAdding && (
                                         <div className="bg-muted/30 border border-primary/20 rounded-xl p-4 mb-4 animate-in slide-in-from-top-2">
-                                            <h4 className="text-sm font-bold mb-3 text-primary">New Quota Rule</h4>
-                                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                                <div className="md:col-span-1">
-                                                    <label className="text-xs font-semibold block mb-1">Question</label>
-                                                    <select
-                                                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                                                        value={newQuota.nodeId}
-                                                        onChange={(e) => setNewQuota({ ...newQuota, nodeId: e.target.value, subField: "", value: "" })}
-                                                    >
-                                                        <option value="">Select...</option>
-                                                        {nodes.map(n => (
-                                                            <option key={n.id} value={n.id}>{n.label}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-
-                                                {/* Subfield if Matrix */}
-                                                {nodes.find(n => n.id === newQuota.nodeId)?.type === 'matrixChoice' && (
-                                                    <div>
-                                                        <label className="text-xs font-semibold block mb-1">Row (Sub-field)</label>
-                                                        <select
-                                                            className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                                                            value={newQuota.subField}
-                                                            onChange={(e) => setNewQuota({ ...newQuota, subField: e.target.value, value: "" })}
-                                                        >
-                                                            <option value="">Select Row...</option>
-                                                            {(nodes.find(n => n.id === newQuota.nodeId)?.data?.rows as any[] || []).map((row: any, i: number) => (
-                                                                <option key={i} value={row.label || row.value}>
-                                                                    {row.label}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                )}
-                                                <div>
-                                                    <label className="text-xs font-semibold block mb-1">Operator</label>
-                                                    <select
-                                                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                                                        value={newQuota.operator}
-                                                        onChange={(e) => setNewQuota({ ...newQuota, operator: e.target.value })}
-                                                    >
-                                                        <option value="equals">Equals (=)</option>
-                                                        <option value="not_equals">Not Equals (!=)</option>
-                                                        <option value="contains">Contains</option>
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs font-semibold block mb-1">Value</label>
-                                                    {(() => {
-                                                        const selectedNode = nodes.find(n => n.id === newQuota.nodeId);
-                                                        let questionOptions: any[] = [];
-
-                                                        if (selectedNode) {
-                                                            if (selectedNode.type === 'matrixChoice') {
-                                                                questionOptions = (selectedNode.data?.columns as any[]) || [];
-                                                            } else if (selectedNode.type === 'cascadingChoice') {
-                                                                // Simplified for now, cascading usually complex
-                                                                const steps = (selectedNode.data?.steps as any[]) || [];
-                                                                questionOptions = steps.flatMap((s: any) => s.options || []);
-                                                            } else {
-                                                                questionOptions = [...((selectedNode.options as any[]) || [])];
-                                                            }
-                                                        }
-
-                                                        return questionOptions.length > 0 ? (
-                                                            <select
-                                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                                                                value={newQuota.value}
-                                                                onChange={(e) => setNewQuota({ ...newQuota, value: e.target.value })}
-                                                            >
-                                                                <option value="">Select...</option>
-                                                                {questionOptions.map((opt: any, i: number) => (
-                                                                    <option key={i} value={opt.value ?? opt.label}>
-                                                                        {opt.label || opt.value}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
-                                                        ) : (
-                                                            <input
-                                                                placeholder="Answer value"
-                                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                                                                value={newQuota.value}
-                                                                onChange={(e) => setNewQuota({ ...newQuota, value: e.target.value })}
-                                                            />
-                                                        );
-                                                    })()}
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs font-semibold block mb-1">Limit</label>
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h4 className="text-sm font-bold text-primary">Target Selection (Complex Rules)</h4>
+                                                <div className="flex items-center gap-3">
+                                                    <label className="text-xs font-semibold">Response Limit:</label>
                                                     <input
                                                         type="number"
                                                         placeholder="Max"
-                                                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                                        className="w-24 bg-background border border-border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                                                         value={newQuota.limit}
                                                         onChange={(e) => setNewQuota({ ...newQuota, limit: e.target.value })}
                                                     />
                                                 </div>
                                             </div>
-                                            <div className="flex justify-end gap-2 mt-4">
-                                                <button onClick={() => setIsAdding(false)} className="px-3 py-1.5 text-xs font-medium hover:bg-muted rounded-lg">Cancel</button>
-                                                <button onClick={handleCreate} className="px-3 py-1.5 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90">Save Rule</button>
+
+                                            <div className="bg-background border border-border rounded-xl p-2 min-h-[150px]">
+                                                <ConditionBuilder
+                                                    nodes={flowNodes}
+                                                    value={newQuota.logic}
+                                                    onChange={(logic) => setNewQuota({ ...newQuota, logic })}
+                                                />
+                                            </div>
+
+                                            <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-border/50">
+                                                <button onClick={() => setIsAdding(false)} className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-lg transition-colors">Cancel</button>
+                                                <button onClick={handleCreate} className="px-6 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 shadow-md shadow-primary/20">Save Quota Rule</button>
                                             </div>
                                         </div>
                                     )}
 
                                     {/* List */}
                                     {quotas.length === 0 && !isAdding ? (
-                                        <div className="text-center py-12 text-muted-foreground">
-                                            <IconAlertCircle className="mx-auto mb-2 opacity-50" size={32} />
-                                            <p>No quotas defined yet.</p>
+                                        <div className="text-center py-16 bg-muted/20 rounded-2xl border-2 border-dashed border-border">
+                                            <IconAlertCircle className="mx-auto mb-3 text-muted-foreground/50" size={48} />
+                                            <h4 className="text-lg font-bold text-muted-foreground">No Quotas Defined</h4>
+                                            <p className="text-sm text-muted-foreground max-w-xs mx-auto">Create rules to limit how many people with certain demographics can take your survey.</p>
                                         </div>
                                     ) : (
                                         <div className="grid gap-3">
                                             {quotas.map(quota => (
-                                                <div key={quota.id} className="flex items-center justify-between p-4 bg-card border border-border rounded-xl hover:shadow-sm transition-all">
-                                                    <div className="flex-1 grid grid-cols-3 gap-4">
-                                                        <div>
-                                                            <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1">Question</p>
-                                                            <p className="text-sm font-medium line-clamp-1" title={getNodeLabel(quota.rule.nodeId)}>
-                                                                {getNodeLabel(quota.rule.nodeId)}
-                                                                {quota.rule.subField && <span className="text-xs text-primary font-normal ml-1">({quota.rule.subField})</span>}
+                                                <div key={quota.id} className="flex items-center justify-between p-5 bg-card border border-border rounded-2xl hover:shadow-md transition-all group">
+                                                    <div className="flex-1 space-y-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="bg-primary/10 text-primary p-1.5 rounded-lg">
+                                                                <IconSettings size={18} />
+                                                            </div>
+                                                            <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Complex Quota Rule</p>
+                                                        </div>
+                                                        <div className="bg-muted/30 p-3 rounded-xl border border-border/50">
+                                                            <p className="text-sm font-medium leading-relaxed">
+                                                                {summarizeRule(quota.rule, flowNodes)}
                                                             </p>
                                                         </div>
-                                                        <div>
-                                                            <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1">Rule</p>
-                                                            <p className="text-sm font-mono bg-muted/50 inline-block px-1.5 rounded">{quota.rule.operator} "{quota.rule.value}"</p>
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1">Limit</p>
-                                                            <p className="text-sm font-bold text-primary">{quota.limit.toLocaleString()}</p>
+                                                        <div className="flex items-center gap-4 text-xs font-bold">
+                                                            <span className="text-muted-foreground">MAX LIMIT:</span>
+                                                            <span className="text-primary bg-primary/5 px-2 py-0.5 rounded-md border border-primary/10">{quota.limit.toLocaleString()} Responses</span>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-4 pl-4 border-l border-border">
-                                                        <button onClick={() => handleToggle(quota.id, quota.enabled)} className="text-primary hover:opacity-80 transition-opacity" title="Toggle Status">
-                                                            {quota.enabled ? <IconToggleRight size={28} className="text-emerald-500" /> : <IconToggleLeft size={28} className="text-muted-foreground" />}
+                                                    <div className="flex items-center gap-4 pl-6 border-l border-border ml-6">
+                                                        <button
+                                                            onClick={() => handleToggle(quota.id, quota.enabled)}
+                                                            className="transition-all active:scale-95"
+                                                            title={quota.enabled ? "Deactivate" : "Activate"}
+                                                        >
+                                                            {quota.enabled ? <IconToggleRight size={32} className="text-emerald-500" /> : <IconToggleLeft size={32} className="text-muted-foreground/50" />}
                                                         </button>
-                                                        <button onClick={() => handleDelete(quota.id)} className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors" title="Delete Rule">
-                                                            <IconTrash size={18} />
+                                                        <button
+                                                            onClick={() => handleDelete(quota.id)}
+                                                            className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-all"
+                                                            title="Delete Rule"
+                                                        >
+                                                            <IconTrash size={20} />
                                                         </button>
                                                     </div>
                                                 </div>
@@ -319,5 +241,52 @@ export function SurveyQuotaModal({ isOpen, onClose, surveyId }: SurveyQuotaModal
                 </div>
             )}
         </AnimatePresence>
+    );
+}
+
+function summarizeRule(item: any, nodes: Node[]): React.ReactNode {
+    if (!item) return "No rule";
+
+    if (item.type === 'group') {
+        if (!item.children || item.children.length === 0) return "Always Matches";
+        return (
+            <span className="flex flex-wrap items-center gap-1.5">
+                {item.children.map((child: any, i: number) => (
+                    <span key={child.id} className="flex items-center gap-1.5">
+                        <span className="border border-border rounded-lg p-1.5 bg-background shadow-xs">
+                            {summarizeRule(child, nodes)}
+                        </span>
+                        {i < item.children.length - 1 && (
+                            <span className="text-[10px] font-black bg-primary text-white px-2 py-0.5 rounded shadow-sm">{item.logicType}</span>
+                        )}
+                    </span>
+                ))}
+            </span>
+        );
+    }
+
+    const node = nodes.find(n => n.id === item.field);
+    const label = node?.data?.label || item.field || 'Question';
+
+    // Resolve value label if possible
+    let displayValue = item.value;
+    if (node && typeof item.value === 'string') {
+        const options = (node.data?.options as any[]) || [];
+        const opt = options.find((o: any) => o.value === item.value);
+        if (opt) displayValue = opt.label;
+    } else if (typeof item.value === 'object' && item.value !== null) {
+        if (item.operator === 'is_between') {
+            displayValue = `${item.value.min} to ${item.value.max}`;
+        } else {
+            displayValue = JSON.stringify(item.value);
+        }
+    }
+
+    return (
+        <span className="text-sm">
+            <span className="font-bold text-foreground/70">{label}</span>
+            <span className="mx-1.5 text-primary opacity-60 font-mono text-xs uppercase">{item.operator.replace('_', ' ')}</span>
+            <span className="font-black text-primary">"{displayValue}"</span>
+        </span>
     );
 }

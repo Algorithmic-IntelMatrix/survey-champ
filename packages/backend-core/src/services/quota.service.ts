@@ -5,11 +5,18 @@ import { prisma } from "@surveychamp/db";
 // This effectively describes the transaction interface for Prisma
 type PrismaTx = any; // Simplifying type for Monorepo usage, or import from Prisma types if needed
 
-interface QuotaRule {
-    nodeId: string;
+interface LogicRule {
+    type: 'rule';
+    field: string;
     subField?: string;
-    operator: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than' | 'gt' | 'lt';
+    operator: string;
     value: any;
+}
+
+interface LogicGroup {
+    type: 'group';
+    logicType: 'AND' | 'OR';
+    children: (LogicGroup | LogicRule)[];
 }
 
 export const QuotaService = {
@@ -38,7 +45,7 @@ export const QuotaService = {
                 where: {
                     surveyId,
                     status: ResponseStatus.COMPLETED,
-                    id: { not: currentResponseId } // Exclude current one as it's not completed yet
+                    id: { not: currentResponseId }
                 }
             });
 
@@ -51,18 +58,14 @@ export const QuotaService = {
         const quotas = survey.surveyQuotas.filter((q: any) => q.enabled);
         
         for (const quota of quotas) {
-            const rule = quota.rule as unknown as QuotaRule;
+            const logic = quota.rule as unknown as (LogicGroup | LogicRule);
             
-            // Check if CURRENT response matches this rule. 
-            // If the user's answer doesn't match the rule, this quota doesn't apply to them.
-            if (!matchesRule(responseData, rule)) {
+            // Evaluate logic for CURRENT response
+            if (!evaluateItem(responseData, logic)) {
                 continue;
             }
 
-            // Count how many ALREADY COMPLETED responses match this rule
-            
             // Fetch all COMPLETED responses for this survey (excluding current)
-            // Fetching just the 'response' JSON for efficiency
             const candidates = await tx.surveyResponse.findMany({
                 where: {
                     surveyId,
@@ -75,12 +78,12 @@ export const QuotaService = {
             let count = 0;
             for (const c of candidates) {
                 const rData = c.response as Record<string, any>;
-                if (rData && matchesRule(rData, rule)) {
+                if (rData && evaluateItem(rData, logic)) {
                     count++;
                 }
             }
             
-            console.log(`[QuotaCheck] Rule: ${rule.nodeId} subField: ${rule.subField || 'none'} Target: ${rule.value} Limit: ${quota.limit} CurrentCount: ${count}`);
+            console.log(`[QuotaCheck] RuleID: ${quota.id} Limit: ${quota.limit} CurrentCount: ${count}`);
             
             if (count >= quota.limit) {
                 return { 
@@ -95,43 +98,57 @@ export const QuotaService = {
     }
 };
 
-// Helper to check rule against response data
-function matchesRule(responseData: Record<string, any>, rule: QuotaRule): boolean {
-    const nodeResponse = responseData[rule.nodeId];
+// Recursive logic evaluator
+function evaluateItem(responseData: Record<string, any>, item: LogicGroup | LogicRule): boolean {
+    if (!item) return false;
+
+    if (item.type === 'group') {
+        if (!item.children || item.children.length === 0) return true; // Empty group matches
+        
+        if (item.logicType === 'AND') {
+            return item.children.every(child => evaluateItem(responseData, child));
+        } else {
+            return item.children.some(child => evaluateItem(responseData, child));
+        }
+    }
+
+    // Single Rule logic
+    const nodeResponse = responseData[item.field];
     if (!nodeResponse || nodeResponse.answer === undefined) return false;
     
-    // Support subField (Matrix rows)
     let answer: any;
-    if (rule.subField) {
-        // In Matrix choice, nodeResponse.answer is the object { row: col }
-        answer = nodeResponse.answer[rule.subField];
+    if (item.subField) {
+        answer = nodeResponse.answer[item.subField];
     } else {
         answer = nodeResponse.answer;
     }
 
     if (answer === undefined) return false;
     
-    // Normalize operators to support both full names and short names (gt, lt)
-    const op = rule.operator;
-    const isMatch = (() => {
-        switch (op) {
-            case 'equals':
-                return String(answer) == String(rule.value);
-            case 'not_equals':
-                return String(answer) != String(rule.value);
-            case 'contains':
-                return String(answer).includes(String(rule.value));
-            case 'greater_than':
-            case 'gt':
-                return Number(answer) > Number(rule.value);
-            case 'less_than':
-            case 'lt':
-                return Number(answer) < Number(rule.value);
-            default:
-                return false;
-        }
-    })();
-
-    console.log(`[QuotaCheck] Node: ${rule.nodeId} subField: ${rule.subField || 'none'} Answer: ${JSON.stringify(answer)} RuleValue: ${rule.value} Op: ${op} Match: ${isMatch}`);
-    return isMatch;
+    switch (item.operator) {
+        case 'equals':
+            return String(answer) == String(item.value);
+        case 'not_equals':
+            return String(answer) != String(item.value);
+        case 'contains':
+            return String(answer).includes(String(item.value));
+        case 'greater_than':
+        case 'gt':
+            return Number(answer) > Number(item.value);
+        case 'less_than':
+        case 'lt':
+            return Number(answer) < Number(item.value);
+        case 'is_between':
+            if (typeof item.value === 'object' && item.value.min !== undefined && item.value.max !== undefined) {
+                const val = Number(answer);
+                return val >= Number(item.value.min) && val <= Number(item.value.max);
+            }
+            return false;
+        case 'in_range':
+            // Handles comma separated strings or arrays
+            const range = Array.isArray(item.value) ? item.value : String(item.value).split(',').map(s => s.trim());
+            return range.includes(String(answer));
+        default:
+            return false;
+    }
 }

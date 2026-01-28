@@ -260,7 +260,7 @@ const RuleItem = ({ rule, onUpdate, onRemove, validQuestions }: {
                 >
                     <option value="">Row...</option>
                     {(selectedQuestion.data.rows as any[] || []).map((row: any, i: number) => (
-                        <option key={i} value={row.label || row.value}>
+                        <option key={i} value={row.value ?? row.label}>
                             {row.label}
                         </option>
                     ))}
@@ -350,7 +350,7 @@ const RuleItem = ({ rule, onUpdate, onRemove, validQuestions }: {
                                         >
                                             <option value="">Select...</option>
                                             {questionOptions.map((opt: any, i: number) => (
-                                                <option key={i} value={opt.label || opt.value}>
+                                                <option key={i} value={opt.value ?? opt.label}>
                                                     {opt.label || opt.value}
                                                 </option>
                                             ))}
