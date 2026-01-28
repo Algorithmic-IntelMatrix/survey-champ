@@ -33,6 +33,7 @@ export interface SurveyQuota {
 }
 
 export interface StartResponseParams {
+    id?: string;
     surveyId: string;
     mode?: string;
     respondentId?: string;

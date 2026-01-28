@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { createSurveySchema, updateSurveySchema } from "@surveychamp/common";
 import { surveyService } from "@surveychamp/backend-core";
+import { redis } from "@surveychamp/redis";
 
 export const surveyController = {
     createSurvey : async (req : Request, res : Response) =>{
@@ -78,6 +79,10 @@ export const surveyController = {
                 return res.status(404).json({message: "Survey not found or not owned by user"});
             }
 
+            // Invalidate cache for Runner API
+            await redis.del(`survey:${surveyId}`);
+            await redis.del(`workflow_latest:${surveyId}`);
+
             return res.status(200).json({message: "Survey updated successfully"});
         } catch (error) {
             console.error("Error updating survey:", error);
@@ -97,6 +102,10 @@ export const surveyController = {
             if (survey.count === 0) {
                 return res.status(404).json({message: "Survey not found or not owned by user"});
             }
+
+            // Invalidate cache for Runner API
+            await redis.del(`survey:${surveyId}`);
+            await redis.del(`workflow_latest:${surveyId}`);
 
             return res.status(200).json({message: "Survey deleted successfully"});
         } catch (error) {

@@ -1,171 +1,61 @@
 import type { Request, Response } from "express";
-import { createSurveyWorkflowSchema, updateSurveyWorkflowSchema } from "@surveychamp/common";
-import { surveyWorkflowService, surveyService, validateWorkflow } from "@surveychamp/backend-core";
+import { surveyWorkflowService } from "@surveychamp/backend-core";
+import { redis } from "@surveychamp/redis";
+
+// In-memory map to handle request coalescing (thundering herd protection)
+const pendingWorkflowLookups = new Map<string, Promise<any>>();
 
 export const surveyWorkflowController = {
-  createWorkflow: async (req: Request, res: Response) => {
+  getLatestWorkflow: async (req: Request, res: Response) => {
     try {
-      if (!req.user) {
-         res.status(401).json({ message: "Unauthorized" });
-         return; 
-      }
-
-      const validation = createSurveyWorkflowSchema.safeParse(req.body);
-
-      if (!validation.success) {
-         res.status(400).json({
-          message: "Validation Error",
-          errors: validation.error.issues
-        });
+      const surveyId = req.params.surveyId as string;
+      if (!surveyId) {
+        res.status(400).json({ message: "Survey ID is required" });
         return;
       }
 
-      const { surveyId, runtimeJson, designJson } = validation.data;
+      const cacheKey = `workflow_latest:${surveyId}`;
 
-      // Validate Workflow Graph
-      const graphValidation = validateWorkflow(designJson.nodes as any[], designJson.edges as any[]);
-      if (!graphValidation.isValid) {
-           res.status(400).json({
-               message: "Invalid Workflow Graph",
-               error: graphValidation.error
-           });
-           return;
+      // 1. Try Cache
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return res.status(200).json({ data: JSON.parse(cached) });
       }
 
-      // Verify ownership of the survey
-      const survey = await surveyService.getSurveyById(req.user, surveyId);
-      if (!survey) {
-         res.status(404).json({ message: "Survey not found or access denied" });
-         return;
+      // 2. Request Coalescing
+      if (pendingWorkflowLookups.has(surveyId)) {
+        console.log(`Coalescing request for survey: ${surveyId}`);
+        const workflow = await pendingWorkflowLookups.get(surveyId);
+        return res.status(200).json({ data: workflow });
       }
 
-      const workflow = await surveyWorkflowService.createSurveyWorkflow({
-        surveyId,
-        runtimeJson,
-        designJson,
-      });
+      // 3. Fallback to DB (only one request gets here)
+      const lookupPromise = (async () => {
+        try {
+          console.log(`Cache Miss: Fetching workflow for ${surveyId} from DB`);
+          const workflow = await surveyWorkflowService.getLatestWorkflowBySurveyId(surveyId);
+          
+          if (workflow) {
+            await redis.set(cacheKey, JSON.stringify(workflow), "EX", 3600); // 1 hour TTL
+          }
+          return workflow;
+        } finally {
+          pendingWorkflowLookups.delete(surveyId);
+        }
+      })();
 
-      res.status(201).json({ message: "Workflow created successfully", data: workflow });
+      pendingWorkflowLookups.set(surveyId, lookupPromise);
+      const workflow = await lookupPromise;
+
+      if (!workflow) {
+        res.status(404).json({ data: null, message: "No workflow found for this survey" });
+        return;
+      }
+
+      res.status(200).json({ data: workflow });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Internal Server Error" });
     }
-  },
-
-  getWorkflows: async (req: Request, res: Response) => {
-    try {
-      const surveyId = req.params.surveyId as string;
-      
-      if (!surveyId) {
-          res.status(400).json({ message: "Survey ID is required" });
-          return;
-      }
-
-      // Verify ownership
-      const survey = await surveyService.getSurveyById(req.user, surveyId);
-      if (!survey) {
-         res.status(404).json({ message: "Survey not found or access denied" });
-         return;
-      }
-
-      const workflows = await surveyWorkflowService.getWorkflowsBySurveyId(surveyId);
-      res.status(200).json({ data: workflows });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Internal Server Error" });
-    }
-  },
-
-  getLatestWorkflow: async (req: Request, res: Response) => {
-    try {
-         const surveyId = req.params.surveyId as string;
-         
-         if (!surveyId) {
-             res.status(400).json({ message: "Survey ID is required" });
-             return;
-         }
-   
-         // Verify ownership - OPTIONAL for public surveys or shared, but for builder API usually auth is required.
-         // Assuming builder-api is for the builder, checking req.user
-         if (req.user) {
-             const survey = await surveyService.getSurveyById(req.user, surveyId);
-             if (!survey) {
-                res.status(404).json({ message: "Survey not found or access denied" });
-                return;
-             }
-         } else {
-             // If public access is allowed (e.g. preview), we might skip this.
-             // But following original code logic, strict check.
-             // Original: authenticate middleware used on route?
-             // Route file says: /:surveyId/latest is NOT authenticated in original code?
-             // "surveyWorkflowRouter.get("/:surveyId/latest", ...)" is BEFORE "use(authenticate)"
-             // So it allows public access.
-         }
-   
-         const workflow = await surveyWorkflowService.getLatestWorkflowBySurveyId(surveyId);
-         
-         if (!workflow) {
-             res.status(200).json({ data: null, message: "No workflow found for this survey" });
-             return;
-         }
-
-         res.status(200).json({ data: workflow });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Internal Server Error" });
-    }
-  },
-
-  updateWorkflow: async (req: Request, res: Response) => {
-      try {
-        if (!req.user) {
-            res.status(401).json({ message: "Unauthorized" });
-            return;
-         }
-
-         const id = req.params.id as string; // Workflow ID
-         
-         // Validation
-         const validation = updateSurveyWorkflowSchema.safeParse(req.body);
-         if (!validation.success) {
-            res.status(400).json({ 
-             message: "Validation Error", 
-             errors: (validation.error as any).errors 
-           });
-           return;
-         }
-
-         // Graph Validation if designJson is being updated
-         if (validation.data.designJson) {
-             const designJson = validation.data.designJson;
-             const graphValidation = validateWorkflow(designJson.nodes as any[], designJson.edges as any[]);
-             if (!graphValidation.isValid) {
-                 res.status(400).json({
-                     message: "Invalid Workflow Graph",
-                     error: graphValidation.error
-                 });
-                 return;
-             }
-         }
-
-         const existingWorkflow = await surveyWorkflowService.getSurveyWorkflowById(id);
-         if (!existingWorkflow) {
-             res.status(404).json({ message: "Workflow not found" });
-             return;
-         }
-
-         const survey = await surveyService.getSurveyById(req.user, existingWorkflow.surveyId);
-         if (!survey) {
-             res.status(403).json({ message: "Access denied" });
-             return;
-         }
-
-         const updatedWorkflow = await surveyWorkflowService.updateSurveyWorkflow(id, validation.data);
-         res.status(200).json({ message: "Workflow updated", data: updatedWorkflow });
-
-      } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Internal Server Error" });
-      }
   }
 };

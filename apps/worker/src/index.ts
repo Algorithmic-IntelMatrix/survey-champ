@@ -1,5 +1,5 @@
 import { createSurveySubmissionWorker } from "@surveychamp/queue";
-import { Mode, prisma } from "@surveychamp/db";
+import { Mode, prisma, ResponseStatus } from "@surveychamp/db";
 
 console.log("🚀 SurveyChamp Worker starting...");
 
@@ -23,56 +23,106 @@ async function processBatch() {
   console.log(`📦 Processing batch of ${currentBatch.length} submissions...`);
 
   try {
-    // 1. Group metrics by surveyId and mode to update them in fewer queries
-    const submissionsToCreate: any[] = [];
+    const responseOperations: Record<string, {
+      data: any;
+      isNew: boolean;
+      metrics: Set<string>;
+    }> = {};
+
     const metricsUpdates: Record<string, any> = {};
 
-    for (const job of currentBatch) {
-      const { surveyId, mode, status, response, outcome, respondentId } = job.data;
-      const jobName = job.name; // "submission" or "process-status-change"
+    // Sort batch by timestamp to ensure chronological processing
+    const sortedBatch = currentBatch.sort((a, b) => 
+      new Date(a.data.timestamp).getTime() - new Date(b.data.timestamp).getTime()
+    );
 
-      // 1. If it's a new submission, we need to create the record
-      if (jobName === "submission") {
-        submissionsToCreate.push({
-          surveyId,
-          mode,
-          response,
-          status,
-          outcome,
-          respondentId,
-        });
-      }
+    for (const job of sortedBatch) {
+      const { id, surveyId, mode, status, response, outcome, respondentId } = job.data;
+      const jobName = job.name;
 
-      // 2. Aggregate metrics for BOTH types of jobs
-      const key = `${surveyId}_${mode}`;
-      if (!metricsUpdates[key]) {
-        metricsUpdates[key] = { 
-          surveyId, 
-          mode, 
-          qualityTerminate: 0,
-          securityTerminate: 0,
-          completed: 0,
-          dropped: 0,
-          disqualified: 0,
-          overQuota: 0,
-          clicked: 0
+      if (!id) continue;
+
+      if (!responseOperations[id]) {
+        responseOperations[id] = {
+          data: { id, surveyId, mode, status: ResponseStatus.IN_PROGRESS },
+          isNew: jobName === "start-response" || jobName === "submission",
+          metrics: new Set(),
         };
       }
 
-      if (status === "COMPLETED") metricsUpdates[key].completed++;
-      else if (status === "DROPPED") metricsUpdates[key].dropped++;
-      else if (status === "DISQUALIFIED") metricsUpdates[key].disqualified++;
-      else if (status === "OVER_QUOTA") metricsUpdates[key].overQuota++;
-      else if (status === "CLICKED") metricsUpdates[key].clicked++;
-      else if (status === "QUALITY_TERMINATE") metricsUpdates[key].qualityTerminate++;
-      else if (status === "SECURITY_TERMINATE") metricsUpdates[key].securityTerminate++;
+      const op = responseOperations[id];
+
+      // Update data based on job type
+      if (jobName === "submission" || jobName === "start-response") {
+        op.data = { ...op.data, surveyId, mode, response, status, outcome, respondentId };
+        if (status) op.metrics.add(status);
+      } else if (jobName === "update-response") {
+        if (response !== undefined) op.data.response = response;
+        if (status !== undefined) {
+          op.data.status = status;
+          op.metrics.add(status);
+        }
+        if (outcome !== undefined) op.data.outcome = outcome;
+        if (respondentId !== undefined) op.data.respondentId = respondentId;
+      } else if (jobName === "heartbeat") {
+        op.data.updatedAt = new Date();
+      }
+
+      // Aggregate metrics logic (per surveyId and mode)
+      const mKey = `${op.data.surveyId}_${op.data.mode}`;
+      if (!metricsUpdates[mKey]) {
+        metricsUpdates[mKey] = { 
+          surveyId: op.data.surveyId, 
+          mode: op.data.mode,
+          qualityTerminate: 0, securityTerminate: 0, completed: 0, 
+          dropped: 0, disqualified: 0, overQuota: 0, clicked: 0 
+        };
+      }
     }
 
-    // 3. Perform Batch DB Operations
-    const operations: any[] = [];
+    // Now convert the accumulated status changes into metric increments
+    for (const id in responseOperations) {
+      const op = responseOperations[id];
+      const mKey = `${op.data.surveyId}_${op.data.mode}`;
+      
+      op.metrics.forEach(status => {
+        if (status === "COMPLETED") metricsUpdates[mKey].completed++;
+        else if (status === "DROPPED") metricsUpdates[mKey].dropped++;
+        else if (status === "DISQUALIFIED") metricsUpdates[mKey].disqualified++;
+        else if (status === "OVER_QUOTA") metricsUpdates[mKey].overQuota++;
+        else if (status === "CLICKED") metricsUpdates[mKey].clicked++;
+        else if (status === "QUALITY_TERMINATE") metricsUpdates[mKey].qualityTerminate++;
+        else if (status === "SECURITY_TERMINATE") metricsUpdates[mKey].securityTerminate++;
+      });
+    }
 
-    if (submissionsToCreate.length > 0) {
-      operations.push(prisma.surveyResponse.createMany({ data: submissionsToCreate }));
+    // 3. Perform Final DB Operations
+    const operations: any[] = [];
+    const newResponses: any[] = [];
+    const updates: any[] = [];
+
+    for (const id in responseOperations) {
+      const op = responseOperations[id];
+      if (op.isNew) {
+        newResponses.push(op.data);
+      } else {
+        updates.push(op.data);
+      }
+    }
+
+    if (newResponses.length > 0) {
+      operations.push(prisma.surveyResponse.createMany({ 
+        data: newResponses,
+        skipDuplicates: true // Just in case
+      }));
+    }
+
+    for (const updateObj of updates) {
+      const { id, ...data } = updateObj;
+      operations.push(prisma.surveyResponse.update({
+        where: { id },
+        data: data
+      }));
     }
 
     // Add metrics upserts
@@ -80,17 +130,7 @@ async function processBatch() {
        operations.push(
          prisma.surveyMetrics.upsert({
            where: { surveyId_mode: { surveyId: update.surveyId, mode: update.mode as Mode } },
-           create: {
-             surveyId: update.surveyId,
-             mode: update.mode as Mode,
-             qualityTerminate: update.qualityTerminate,
-             securityTerminate: update.securityTerminate,
-             completed: update.completed,
-             dropped: update.dropped,
-             disqualified: update.disqualified,
-             overQuota: update.overQuota,
-             clicked: update.clicked,
-           },
+           create: update,
            update: {
              qualityTerminate: { increment: update.qualityTerminate },
              securityTerminate: { increment: update.securityTerminate },

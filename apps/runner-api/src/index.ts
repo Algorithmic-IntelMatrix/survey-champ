@@ -3,8 +3,9 @@ import cors from "cors";
 import helmet from "helmet";
 import { surveySubmissionQueue } from "@surveychamp/queue";
 import { surveySubmissionSchema } from "@surveychamp/common";
-import { prisma } from "@surveychamp/db"; // Only for initial read, eventually replaced by cache
+import { surveyService } from "@surveychamp/backend-core";
 import { redis } from "@surveychamp/redis";
+import { v4 as uuidv4 } from "uuid";
 
 import responseRoutes from "./routes/response.route";
 import { surveyWorkflowRouter } from "./routes/workflow.route";
@@ -17,8 +18,8 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(helmet());
 app.use(express.json());
 
-
 const CACHE_TTL = 3600; // 1 hour
+const pendingSurveyLookups = new Map<string, Promise<any>>();
 
 app.get("/", (req, res) => {
   res.json({ service: "runner-api", status: "ok" });
@@ -28,7 +29,7 @@ app.use("/api/responses", responseRoutes);
 app.use("/api/workflows", surveyWorkflowRouter);
 app.use("/api/storage", storageRouter);
 
-// Get Survey Endpoint (Cache-Aside)
+// Get Survey Endpoint (Cache-Aside with Coalescing)
 app.get("/survey/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -37,26 +38,36 @@ app.get("/survey/:id", async (req, res) => {
     // 1. Try Cache
     const cached = await redis.get(cacheKey);
     if (cached) {
-      console.log(`Cache Hit: ${id}`);
       return res.json(JSON.parse(cached));
     }
 
-    // 2. Fallback to DB
-    console.log(`Cache Miss: ${id}`);
-    const survey = await prisma.surveys.findUnique({
-      where: { id },
-      include: {
-        surveyWorkflow: true,
-        surveyQuotas: true,
-      },
-    });
+    // 2. Request Coalescing
+    if (pendingSurveyLookups.has(id)) {
+      const survey = await pendingSurveyLookups.get(id);
+      return res.json(survey);
+    }
+
+    // 3. Fallback to DB (only one request gets here)
+    const lookupPromise = (async () => {
+      try {
+        console.log(`Cache Miss: Fetching survey ${id} from DB`);
+        const survey = await surveyService.getSurveyById("PUBLIC_ACCESS", id); // Assuming backend-core handles public check
+        
+        if (survey) {
+          await redis.set(cacheKey, JSON.stringify(survey), "EX", CACHE_TTL);
+        }
+        return survey;
+      } finally {
+        pendingSurveyLookups.delete(id);
+      }
+    })();
+
+    pendingSurveyLookups.set(id, lookupPromise);
+    const survey = await lookupPromise;
 
     if (!survey) {
       return res.status(404).json({ error: "Survey not found" });
     }
-
-    // 3. Update Cache
-    await redis.set(cacheKey, JSON.stringify(survey), "EX", CACHE_TTL);
 
     res.json(survey);
   } catch (error) {
@@ -79,9 +90,11 @@ app.post("/submit", async (req, res) => {
     }
 
     const { surveyId, mode, response, status, outcome, respondentId } = validationResult.data;
+    const responseId = uuidv4();
 
     // Push to Queue
     await surveySubmissionQueue.add("submission", {
+      id: responseId,
       surveyId,
       mode,
       response,

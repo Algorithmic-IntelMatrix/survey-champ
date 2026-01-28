@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { createSurveyWorkflowSchema, updateSurveyWorkflowSchema } from "@surveychamp/common";
 import { surveyWorkflowService, surveyService, validateWorkflow } from "@surveychamp/backend-core";
+import { redis } from "@surveychamp/redis";
 
 export const surveyWorkflowController = {
   createWorkflow: async (req: Request, res: Response) => {
@@ -44,6 +45,10 @@ export const surveyWorkflowController = {
         runtimeJson,
         designJson,
       });
+
+      // Invalidate cache for Runner API
+      await redis.del(`survey:${surveyId}`);
+      await redis.del(`workflow_latest:${surveyId}`);
 
       res.status(201).json({ message: "Workflow created successfully", data: workflow });
     } catch (error) {
@@ -161,6 +166,11 @@ export const surveyWorkflowController = {
          }
 
          const updatedWorkflow = await surveyWorkflowService.updateSurveyWorkflow(id, validation.data);
+
+         // Invalidate cache for Runner API
+         await redis.del(`survey:${existingWorkflow.surveyId}`);
+         await redis.del(`workflow_latest:${existingWorkflow.surveyId}`);
+
          res.status(200).json({ message: "Workflow updated", data: updatedWorkflow });
 
       } catch (error) {

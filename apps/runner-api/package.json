@@ -7,17 +7,19 @@
         "start": "bun src/index.ts"
     },
     "dependencies": {
-        "@surveychamp/db": "workspace:*",
         "@surveychamp/common": "workspace:*",
+        "@surveychamp/db": "workspace:*",
+        "@surveychamp/engine": "workspace:*",
         "@surveychamp/queue": "workspace:*",
         "@surveychamp/redis": "workspace:*",
-        "@surveychamp/engine": "workspace:*",
-        "express": "^5.0.0",
         "cors": "^2.8.5",
-        "helmet": "^8.0.0"
+        "express": "^5.0.0",
+        "helmet": "^8.0.0",
+        "uuid": "^13.0.0"
     },
     "devDependencies": {
+        "@types/cors": "^2.8.17",
         "@types/express": "^5.0.0",
-        "@types/cors": "^2.8.17"
+        "@types/uuid": "^11.0.0"
     }
 }

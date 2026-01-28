@@ -98,8 +98,9 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
             const respondentId = pid || (Math.random().toString(36).substring(2) + Date.now().toString(36));
 
             surveyResponseApi.startResponse({
+                id: pid || undefined,
                 surveyId: id,
-                mode: mode || "TEST",
+                mode: mode || "LIVE",
                 respondentId
             })
                 .then(res => setResponseId(res.id))
