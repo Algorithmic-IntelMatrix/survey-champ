@@ -1,32 +1,32 @@
-import type { Request, Response } from "express";
+import { Hono } from "hono";
 import { surveyWorkflowService } from "@surveychamp/backend-core";
-import { redis } from "@surveychamp/redis";
+import { upstashRedis } from "@surveychamp/redis";
+import type { Context } from "hono";
 
 // In-memory map to handle request coalescing (thundering herd protection)
 const pendingWorkflowLookups = new Map<string, Promise<any>>();
 
 export const surveyWorkflowController = {
-  getLatestWorkflow: async (req: Request, res: Response) => {
+  getLatestWorkflow: async (c: Context) => {
     try {
-      const surveyId = req.params.surveyId as string;
+      const { surveyId } = c.req.param() as { surveyId: string };
       if (!surveyId) {
-        res.status(400).json({ message: "Survey ID is required" });
-        return;
+        return c.json({ message: "Survey ID is required" }, 400);
       }
 
       const cacheKey = `workflow_latest:${surveyId}`;
 
       // 1. Try Cache
-      const cached = await redis.get(cacheKey);
+      const cached = await upstashRedis.get(cacheKey);
       if (cached) {
-        return res.status(200).json({ data: JSON.parse(cached) });
+        return c.json({ data: typeof cached === 'string' ? JSON.parse(cached) : cached });
       }
 
       // 2. Request Coalescing
       if (pendingWorkflowLookups.has(surveyId)) {
         console.log(`Coalescing request for survey: ${surveyId}`);
         const workflow = await pendingWorkflowLookups.get(surveyId);
-        return res.status(200).json({ data: workflow });
+        return c.json({ data: workflow });
       }
 
       // 3. Fallback to DB (only one request gets here)
@@ -36,7 +36,7 @@ export const surveyWorkflowController = {
           const workflow = await surveyWorkflowService.getLatestWorkflowBySurveyId(surveyId);
           
           if (workflow) {
-            await redis.set(cacheKey, JSON.stringify(workflow), "EX", 3600); // 1 hour TTL
+            await upstashRedis.set(cacheKey, JSON.stringify(workflow), { ex: 3600 }); // 1 hour TTL
           }
           return workflow;
         } finally {
@@ -48,14 +48,13 @@ export const surveyWorkflowController = {
       const workflow = await lookupPromise;
 
       if (!workflow) {
-        res.status(404).json({ data: null, message: "No workflow found for this survey" });
-        return;
+        return c.json({ data: null, message: "No workflow found for this survey" }, 404);
       }
 
-      res.status(200).json({ data: workflow });
+      return c.json({ data: workflow });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ message: "Internal Server Error" });
+      return c.json({ message: "Internal Server Error" }, 500);
     }
   }
 };

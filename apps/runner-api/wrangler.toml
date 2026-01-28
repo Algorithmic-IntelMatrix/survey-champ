@@ -1,0 +1,12 @@
+name = "surveychamp-runner-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[vars]
+# APP_URL = "https://your-frontend-url.com"
+# UPSTASH_REDIS_REST_URL = "https://***.upstash.io"
+# UPSTASH_REDIS_REST_TOKEN = "***"
+
+# Cloudflare Workers don't support direct Node.js modules like 'os', 'util' easily.
+# Hono is compatible, but we must ensure we don't import Node built-ins.
+node_compat = true

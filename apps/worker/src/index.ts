@@ -221,6 +221,38 @@ const worker = createSurveySubmissionWorker(async (job) => {
   return { status: "buffered" };
 });
 
+// Redis Buffer Bridge (Edge -> Worker)
+// This polls the simple Redis list populated by the Edge API
+async function pollRedisBuffer() {
+  console.log("📥 Redis Buffer Bridge started...");
+  while (true) {
+    try {
+      // BRPOP blocks for up to 5 seconds
+      const result = await redis.brpop("survey-submissions-buffer", 5);
+      
+      if (result) {
+        const [_, payload] = result;
+        const job = JSON.parse(payload);
+        
+        // Push fake "job" to buffer to reuse existing processBatch logic
+        jobBuffer.push(job);
+
+        // Immediate trigger if buffer is full
+        if (jobBuffer.length >= BATCH_SIZE) {
+          await processBatch();
+        } else if (!batchTimeout) {
+          batchTimeout = setTimeout(processBatch, BATCH_INTERVAL_MS);
+        }
+      }
+    } catch (error) {
+      console.error("❌ Error in Redis Buffer Bridge:", error);
+      await new Promise(resolve => setTimeout(resolve, 5000)); // Wait before retry
+    }
+  }
+}
+
+pollRedisBuffer();
+
 worker.on("completed", (job) => {
   // Job completed logic if needed
 });

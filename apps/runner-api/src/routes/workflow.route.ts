@@ -1,10 +1,9 @@
-import { Router } from "express";
+import { Hono } from "hono";
 import { surveyWorkflowController } from "../controllers/workflow.controller";
 
-export const surveyWorkflowRouter = Router();
+const router = new Hono();
 
 // Public read-only access for Runner
-surveyWorkflowRouter.get("/:surveyId/latest", surveyWorkflowController.getLatestWorkflow);
+router.get("/:surveyId/latest", surveyWorkflowController.getLatestWorkflow);
 
-// Runner usually doesn't create workflows
-// surveyWorkflowRouter.post("/", ...); 
+export default router;

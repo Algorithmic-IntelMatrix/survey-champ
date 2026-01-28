@@ -18,7 +18,14 @@ const PORT = process.env.PORT || 4000;
 
 
 app.use(cors({
-    origin: [SYSTEM_CONFIG.APP_URL, SYSTEM_CONFIG.SURVEY_URL],
+    origin: (origin, callback) => {
+        const allowedOrigins = [SYSTEM_CONFIG.APP_URL, SYSTEM_CONFIG.SURVEY_URL];
+        if (!origin || allowedOrigins.includes(origin) || origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:") || origin.match(/^http:\/\/192\.168\.\d+\.\d+:\d+$/)) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"));
+        }
+    },
     credentials: true,
 }));
 app.use(helmet({
