@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { s3Service } from '@surveychamp/backend-core';
 import { v4 as uuidv4 } from 'uuid';
-import { authenticate } from '@/packages/common/src';
+import { authenticate } from '@surveychamp/common';
 
 export const storageRouter = Router();
 

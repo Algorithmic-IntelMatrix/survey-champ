@@ -1,5 +1,4 @@
 import { ResponseStatus } from "@surveychamp/db"; // Use enum from db package
-import { prisma } from "@surveychamp/db";
 
 // Use a type compatible with transaction clients
 // This effectively describes the transaction interface for Prisma

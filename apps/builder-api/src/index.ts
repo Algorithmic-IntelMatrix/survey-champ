@@ -2,14 +2,16 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
-import { createSurveySubmissionWorker } from "@surveychamp/queue";
-import { prisma } from "@surveychamp/db";
 import authRoutes from "./routes/auth.route";
 import surveyRoutes from "./routes/survey.route";
 import { surveyWorkflowRouter } from "./routes/surveyWorkflow.route";
 import surveyResponseRoutes from "./routes/surveyResponse.route";
 import { storageRouter } from "./routes/storage.route";
 import { SYSTEM_CONFIG } from "@surveychamp/common";
+import { createBullBoard } from "@bull-board/api";
+import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
+import { ExpressAdapter } from "@bull-board/express";
+import { surveySubmissionQueue } from "@surveychamp/queue";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -21,6 +23,7 @@ app.use(cors({
 }));
 app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: false, // BullBoard needs this to load its UI
 }));
 app.use(cookieParser());
 app.use(express.json());
@@ -36,39 +39,17 @@ app.use("/api/workflows", surveyWorkflowRouter);
 app.use("/api/responses", surveyResponseRoutes);
 app.use("/api/storage", storageRouter);
 
-// Initialize Worker
-const worker = createSurveySubmissionWorker(async (job) => {
-  console.log("Processing submission:", job.id);
-  const { surveyId, mode, response, status, outcome, respondentId } = job.data;
+// BullBoard Queue Interface
+const serverAdapter = new ExpressAdapter();
+serverAdapter.setBasePath("/admin/queues");
 
-  // Transaction: Create Response + Increment Metrics
-  await prisma.$transaction([
-    prisma.surveyResponse.create({
-      data: {
-        surveyId,
-        mode,
-        response,
-        status,
-        outcome,
-        respondentId,
-      },
-    }),
-    prisma.surveyMetrics.upsert({
-      where: { surveyId_mode: { surveyId, mode } },
-      create: {
-        surveyId,
-        mode,
-        completed: status === "COMPLETED" ? 1 : 0,
-        // Add other counters based on status
-      },
-      update: {
-        completed: status === "COMPLETED" ? { increment: 1 } : undefined,
-      },
-    }),
-  ]);
-
-  return { processed: true };
+createBullBoard({
+  queues: [new BullMQAdapter(surveySubmissionQueue)],
+  serverAdapter: serverAdapter,
 });
+
+app.use("/admin/queues", serverAdapter.getRouter());
+
 
 app.listen(PORT, () => {
   console.log(`Builder API listening on port ${PORT}`);

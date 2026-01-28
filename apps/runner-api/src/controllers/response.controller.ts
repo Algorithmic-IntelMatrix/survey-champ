@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { prisma, ResponseStatus, Mode } from "@surveychamp/db"; 
 import { QuotaService } from "@surveychamp/backend-core";
+import { surveySubmissionQueue } from "@surveychamp/queue";
 
 export const surveyResponseController = {
     getLatestSurveyResponse: async (req: Request, res: Response) => {
@@ -79,21 +80,13 @@ export const surveyResponseController = {
                 }
             });
 
-            await prisma.surveyMetrics.upsert({
-                where: {
-                    surveyId_mode: {
-                        surveyId,
-                        mode: mode || Mode.TEST
-                    }
-                },
-                update: {
-                    clicked: { increment: 1 }
-                },
-                create: {
-                    surveyId,
-                    mode: mode || Mode.TEST,
-                    clicked: 1
-                }
+            // Push metric update to queue
+            await surveySubmissionQueue.add("process-status-change", {
+                surveyId,
+                mode: mode || Mode.TEST,
+                status: "CLICKED",
+                responseId: response.id,
+                respondentId: respondentId || undefined,
             });
 
             return res.status(201).json({ data: response });
@@ -152,79 +145,29 @@ export const surveyResponseController = {
                     include: { survey: true }
                 });
 
-                // Metrics & Webhooks logic
+                // Instead of updating metrics here, we queue a job
+                // The worker will handle metrics and other side effects (batch processing)
                 if (finalStatus && finalStatus !== currentResponse.status && finalStatus !== ResponseStatus.IN_PROGRESS && finalStatus !== ResponseStatus.CLICKED) {
-                    const metricKey = finalStatus === ResponseStatus.COMPLETED ? "completed" :
-                                      finalStatus === ResponseStatus.DROPPED ? "dropped" :
-                                      finalStatus === ResponseStatus.DISQUALIFIED ? "disqualified" :
-                                      finalStatus === ResponseStatus.QUALITY_TERMINATE ? "qualityTerminate" :
-                                      finalStatus === ResponseStatus.SECURITY_TERMINATE ? "securityTerminate" :
-                                      finalStatus === ResponseStatus.OVER_QUOTA ? "overQuota" : null;
-                    
-                    if (metricKey) {
-                        // Dynamically update metrics
-                        // Note: TS might complain about dynamic key access on Prisma generated types.
-                        // We construct the update object safely.
-                        const updateData: any = { [metricKey]: { increment: 1 } };
-                        const createData: any = { 
-                            surveyId: updated.surveyId, 
-                            mode: updated.mode, 
-                            [metricKey]: 1 
-                        };
-
-                        await tx.surveyMetrics.upsert({
-                            where: {
-                                surveyId_mode: {
-                                    surveyId: updated.surveyId,
-                                    mode: updated.mode
-                                }
-                            },
-                            update: updateData,
-                            create: createData
-                        });
-                    }
+                    await surveySubmissionQueue.add("process-status-change", {
+                        responseId: updated.id,
+                        surveyId: updated.surveyId,
+                        mode: updated.mode,
+                        status: finalStatus,
+                        outcome: finalOutcome,
+                        response: responseJson || updated.response,
+                        respondentId: updated.respondentId,
+                    });
                 }
 
                 return { updated, redirectUrl: finalRedirectUrl };
             });
 
             const { updated, redirectUrl } = result;
-
-            // Handle Webhook for Dropped / Failed
-            if (updated.status === ResponseStatus.DROPPED && updated.survey.webhookUrl) {
-                try {
-                    const webhookUrl = updated.survey.webhookUrl;
-                    if (webhookUrl) {
-                        fetch(webhookUrl, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                event: "survey_dropped",
-                                surveyId: updated.surveyId,
-                                responseId: updated.id,
-                                respondentId: updated.respondentId,
-                                status: updated.status,
-                                timestamp: new Date().toISOString()
-                            })
-                        }).catch(err => console.error("Webhook failed", err));
-                    }
-                } catch (err) {
-                    console.error("Webhook dispatch error", err);
-                }
-            }
-
-            let effectiveRedirectUrl = redirectUrl;
             
-            if (!effectiveRedirectUrl) {
-                if (updated.status === ResponseStatus.DROPPED && updated.survey.redirectUrl) {
-                    effectiveRedirectUrl = updated.survey.redirectUrl;
-                }
-            }
-
-             return res.status(200).json({ 
-                 data: updated,
-                 redirectUrl: effectiveRedirectUrl
-             });
+            return res.status(200).json({ 
+                data: updated,
+                redirectUrl: redirectUrl || (updated.status === ResponseStatus.DROPPED ? updated.survey.redirectUrl : null)
+            });
 
         } catch (error: any) {
             console.error(error);
