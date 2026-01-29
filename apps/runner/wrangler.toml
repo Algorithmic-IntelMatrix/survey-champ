@@ -1,0 +1,16 @@
+name = "surveychamp-runner"
+compatibility_date = "2024-09-23"
+pages_build_output_dir = ".vercel/output/static"
+
+# Environment variables for runner
+[vars]
+# These are public variables (safe to include in client bundle)
+NEXT_PUBLIC_RUNNER_API_URL = "https://runner-api.algorithmicintelmatrix.com"
+
+# Production environment
+[env.production]
+name = "surveychamp-runner-prod"
+vars = { NEXT_PUBLIC_RUNNER_API_URL = "https://runner-api.algorithmicintelmatrix.com" }
+routes = [
+  { pattern = "survey.algorithmicintelmatrix.com/*", zone_name = "algorithmicintelmatrix.com" }
+]

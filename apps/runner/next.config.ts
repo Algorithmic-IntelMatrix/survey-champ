@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'export', // Static export for Cloudflare Pages
+  // Configuration for Cloudflare Pages deployment
   images: {
-    unoptimized: true, // Required for static export
+    unoptimized: true, // Required for static export and Cloudflare Pages
   },
 };
 
