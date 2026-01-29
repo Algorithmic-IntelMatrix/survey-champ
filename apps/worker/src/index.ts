@@ -226,7 +226,7 @@ import { BackgroundTasksService } from "@surveychamp/backend-core";
 setInterval(async () => {
     console.log("🧹 Running stale response cleanup...");
     await BackgroundTasksService.dropStaleResponses();
-}, 60000); // Every minute
+}, 600000); // Every 10 minutes (reduced from 60 seconds to save Neon CU)
 
 // Redis Buffer Bridge (Edge -> Worker)
 // TCP Redis with BRPOP (blocking, zero idle cost!)
