@@ -5,6 +5,6 @@
     "main": "./src/index.ts",
     "dependencies": {
         "bullmq": "^5.4.0",
-        "@surveychamp/redis": "workspace:*"
+        "@surveychamp/redis": "*"
     }
 }

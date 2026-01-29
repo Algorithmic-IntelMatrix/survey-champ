@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.8",
-    "@surveychamp/common": "workspace:*",
-    "@surveychamp/engine": "workspace:*",
-    "@surveychamp/types": "workspace:*",
+    "@surveychamp/common": "*",
+    "@surveychamp/engine": "*",
+    "@surveychamp/types": "*",
     "@tabler/icons-react": "^3.36.1",
     "@xyflow/react": "^12.10.0",
     "axios": "^1.13.2",

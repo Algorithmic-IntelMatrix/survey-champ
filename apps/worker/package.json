@@ -7,9 +7,9 @@
         "start": "bun src/index.ts"
     },
     "dependencies": {
-        "@surveychamp/common": "workspace:*",
-        "@surveychamp/db": "workspace:*",
-        "@surveychamp/queue": "workspace:*",
-        "@surveychamp/redis": "workspace:*"
+        "@surveychamp/common": "*",
+        "@surveychamp/db": "*",
+        "@surveychamp/queue": "*",
+        "@surveychamp/redis": "*"
     }
 }
