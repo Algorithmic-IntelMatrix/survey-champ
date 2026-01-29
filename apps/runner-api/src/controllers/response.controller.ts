@@ -1,17 +1,40 @@
-import { ResponseStatus, Mode } from "@surveychamp/db"; 
-import { upstashRedis } from "@surveychamp/redis";
+// Edge-compatible enums (copied from @surveychamp/db)
+enum ResponseStatus {
+  IN_PROGRESS = "IN_PROGRESS",
+  COMPLETED = "COMPLETED",
+  DROPPED = "DROPPED",
+  OVER_QUOTA = "OVER_QUOTA",
+  SECURITY_TERMINATE = "SECURITY_TERMINATE"
+}
+
+enum Mode {
+  LIVE = "LIVE",
+  TEST = "TEST"
+}
+
 import { v4 as uuidv4 } from 'uuid';
 import type { Context } from "hono";
 import { getSignedCookie, setSignedCookie } from 'hono/cookie';
+import { Redis } from "@upstash/redis/cloudflare";
 
 const COOKIE_SECRET = process.env.JWT_SECRET || "survey_champ_secret";
+
+// Helper to get Redis client
+const getRedis = () => new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL || "",
+  token: process.env.UPSTASH_REDIS_REST_TOKEN || ""
+});
 
 export const surveyResponseController = {
     getMetricsBySurveyId: async (c: Context) => {
         const { surveyId } = c.req.param() as { surveyId: string };
         try {
             const cacheKey = `metrics:${surveyId}`;
-            const cached = await upstashRedis.get(cacheKey);
+            const redis = new Redis({
+              url: process.env.UPSTASH_REDIS_REST_URL || "",
+              token: process.env.UPSTASH_REDIS_REST_TOKEN || ""
+            });
+            const cached = await redis.get(cacheKey);
             if (cached) return c.json({ data: typeof cached === 'string' ? JSON.parse(cached) : cached });
             
             return c.json({ data: [] }); 
@@ -24,7 +47,7 @@ export const surveyResponseController = {
         const { surveyId } = c.req.param() as { surveyId: string };
         try {
             const cacheKey = `responses:${surveyId}`;
-            const cached = await upstashRedis.get(cacheKey);
+            const cached = await getRedis().get(cacheKey);
             if (cached) return c.json({ data: typeof cached === 'string' ? JSON.parse(cached) : cached });
             
             return c.json({ data: [] });
@@ -42,7 +65,7 @@ export const surveyResponseController = {
             const currentMode = mode || Mode.TEST;
 
             // Push "start" event and store session in a single pipeline
-            await upstashRedis.pipeline()
+            await getRedis().pipeline()
                 .lpush("survey-submissions-buffer", JSON.stringify({
                     name: "start-response",
                     data: {
@@ -97,14 +120,14 @@ export const surveyResponseController = {
                 mode = parsed.mode;
             } else {
                 // 2. Fallback to Redis (1 command)
-                const redisSession = await upstashRedis.get(`session:${id}`);
+                const redisSession = await getRedis().get(`session:${id}`);
                 const parsed = redisSession ? (typeof redisSession === 'string' ? JSON.parse(redisSession) : redisSession) : { surveyId: null, mode: Mode.TEST };
                 surveyId = parsed.surveyId;
                 mode = parsed.mode;
             }
 
             // Queue the update (1 command)
-            await upstashRedis.lpush("survey-submissions-buffer", JSON.stringify({
+            await getRedis().lpush("survey-submissions-buffer", JSON.stringify({
                 name: "update-response",
                 data: {
                     id,
@@ -122,7 +145,7 @@ export const surveyResponseController = {
             let finalRedirectUrl = customRedirectUrl;
             
             if (!finalRedirectUrl && status && status !== ResponseStatus.IN_PROGRESS && surveyId) {
-                const surveyCache = await upstashRedis.get(`survey:${surveyId}`);
+                const surveyCache = await getRedis().get(`survey:${surveyId}`);
                 if (surveyCache) {
                     const survey = typeof surveyCache === 'string' ? JSON.parse(surveyCache) : surveyCache;
                     if (status === ResponseStatus.DROPPED) finalRedirectUrl = survey.redirectUrl;
@@ -161,13 +184,13 @@ export const surveyResponseController = {
                 surveyId = parsed.surveyId;
                 mode = parsed.mode;
             } else {
-                const redisSession = await upstashRedis.get(`session:${id}`);
+                const redisSession = await getRedis().get(`session:${id}`);
                 const parsed = redisSession ? (typeof redisSession === 'string' ? JSON.parse(redisSession) : redisSession) : { surveyId: null, mode: Mode.TEST };
                 surveyId = parsed.surveyId;
                 mode = parsed.mode;
             }
 
-            await upstashRedis.lpush("survey-submissions-buffer", JSON.stringify({
+            await getRedis().lpush("survey-submissions-buffer", JSON.stringify({
                 name: "heartbeat",
                 data: { id, surveyId, mode, timestamp: new Date().toISOString() }
             }));

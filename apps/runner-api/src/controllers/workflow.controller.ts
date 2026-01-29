@@ -1,10 +1,13 @@
-import { Hono } from "hono";
-import { surveyWorkflowService } from "@surveychamp/backend-core";
-import { upstashRedis } from "@surveychamp/redis";
 import type { Context } from "hono";
+import { Redis } from "@upstash/redis/cloudflare";
 
 // In-memory map to handle request coalescing (thundering herd protection)
 const pendingWorkflowLookups = new Map<string, Promise<any>>();
+
+const getRedis = () => new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL || "",
+  token: process.env.UPSTASH_REDIS_REST_TOKEN || ""
+});
 
 export const surveyWorkflowController = {
   getLatestWorkflow: async (c: Context) => {
@@ -14,10 +17,11 @@ export const surveyWorkflowController = {
         return c.json({ message: "Survey ID is required" }, 400);
       }
 
+      const redis = getRedis();
       const cacheKey = `workflow_latest:${surveyId}`;
 
       // 1. Try Cache
-      const cached = await upstashRedis.get(cacheKey);
+      const cached = await redis.get(cacheKey);
       if (cached) {
         return c.json({ data: typeof cached === 'string' ? JSON.parse(cached) : cached });
       }
@@ -29,14 +33,25 @@ export const surveyWorkflowController = {
         return c.json({ data: workflow });
       }
 
-      // 3. Fallback to DB (only one request gets here)
+      // 3. Fallback to builder-api (edge-compatible, no DB dependency)
       const lookupPromise = (async () => {
         try {
-          console.log(`Cache Miss: Fetching workflow for ${surveyId} from DB`);
-          const workflow = await surveyWorkflowService.getLatestWorkflowBySurveyId(surveyId);
+          console.log(`Cache Miss: Fetching workflow for ${surveyId} from builder-api`);
+          
+          const env = (c as any).env;
+          const response = await fetch(`${env.BUILDER_API_URL}/api/workflows/survey/${surveyId}/latest`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch workflow: ${response.statusText}`);
+          }
+
+          const workflow = await response.json();
           
           if (workflow) {
-            await upstashRedis.set(cacheKey, JSON.stringify(workflow), { ex: 3600 }); // 1 hour TTL
+            await redis.set(cacheKey, JSON.stringify(workflow), { ex: 3600 }); // 1 hour TTL
           }
           return workflow;
         } finally {
