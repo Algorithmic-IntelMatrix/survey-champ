@@ -1,19 +1,21 @@
 [build]
-  # Base directory for monorepo
-  base = "apps/runner"
+  # Base directory - monorepo root
+  base = ""
   
-  # Build command using Bun
-  command = "cd ../.. && curl -fsSL https://bun.sh/install | bash && export PATH=\"$HOME/.bun/bin:$PATH\" && bun install && cd apps/runner && bun run build"
+  # Build command - install Bun and build from root
+  command = "curl -fsSL https://bun.sh/install | bash && export PATH=\"$HOME/.bun/bin:$PATH\" && bun install && cd apps/runner && bun run build"
   
-  # Publish directory
-  publish = ".next"
+  # Publish directory relative to repo root
+  publish = "apps/runner/.next"
+  
+  # Skip automatic npm install
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF ."
 
 [build.environment]
-  # Force Bun usage
   NODE_VERSION = "22"
-  NPM_FLAGS = "--legacy-peer-deps"
+  # Tell Netlify not to auto-install
+  NPM_FLAGS = "--ignore-scripts"
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+# Disable default install command
+[build.processing]
+  skip_processing = false
