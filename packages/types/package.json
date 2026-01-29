@@ -3,6 +3,10 @@
     "version": "0.1.0",
     "type": "module",
     "main": "./src/survey.ts",
+    "exports": {
+        ".": "./src/survey.ts",
+        "./src/*": "./src/*"
+    },
     "dependencies": {},
     "private": true
 }

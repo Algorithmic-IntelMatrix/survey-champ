@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./src/*": "./src/*"
+  },
   "dependencies": {
     "jsonwebtoken": "^9.0.3",
     "zod": "^4.3.6"
