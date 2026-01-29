@@ -1,9 +1,11 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
-  // Configuration for Cloudflare Pages deployment
-  images: {
-    unoptimized: true, // Required for static export and Cloudflare Pages
+  outputFileTracingRoot: path.join(__dirname, '../../'),
+
+  turbopack: {
+    root: path.join(__dirname, '../../'),
   },
 };
 
