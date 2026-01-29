@@ -11,7 +11,7 @@ pnpm install && pnpm --filter @surveychamp/runner build
 
 **Build output directory:**
 ```
-.next
+apps/runner/.next
 ```
 
 **Root directory:** `/` _(leave empty)_
@@ -25,7 +25,7 @@ pnpm install && pnpm --filter @surveychamp/builder build
 
 **Build output directory:**
 ```
-.next
+apps/builder/.next
 ```
 
 **Root directory:** `/` _(leave empty)_
