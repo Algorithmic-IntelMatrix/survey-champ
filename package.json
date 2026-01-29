@@ -7,7 +7,7 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "pnpm --filter './apps/*' dev",
+    "dev": "pnpm --filter './apps/*' --parallel --stream dev",
     "dev:builder": "pnpm --filter builder dev",
     "dev:runner": "pnpm --filter runner dev",
     "build": "pnpm --filter './apps/*' build",

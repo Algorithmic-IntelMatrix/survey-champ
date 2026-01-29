@@ -9,6 +9,7 @@ RUN npm install -g pnpm@10.28.2
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/db/package.json ./packages/db/
 COPY packages/redis/package.json ./packages/redis/
+COPY packages/common/package.json ./packages/common/
 COPY packages/backend-core/package.json ./packages/backend-core/
 COPY packages/queue/package.json ./packages/queue/
 COPY apps/worker/package.json ./apps/worker/
@@ -51,4 +52,5 @@ COPY --from=builder /app ./
 
 WORKDIR /app/apps/worker
 
-CMD ["node", "src/index.js"]
+# Run the application using pnpm start (which uses tsx)
+CMD ["pnpm", "start"]

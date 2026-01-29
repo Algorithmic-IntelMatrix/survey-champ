@@ -2,8 +2,8 @@
 
 ## ✅ Files Updated
 
-- `apps/builder-api/Dockerfile` - Now uses pnpm + Node.js 20
-- `apps/worker/Dockerfile` - Now uses pnpm + Node.js 20
+- `apps/builder-api/Dockerfile` - Now uses pnpm + Node.js 20 + tsx
+- `apps/worker/Dockerfile` - Now uses pnpm + Node.js 20 + tsx
 - Both committed and pushed to main branch
 
 ## 🚀 Deploy to EC2
@@ -87,5 +87,5 @@ docker-compose restart
 After deployment:
 - builder-api running on port 4000
 - worker processing background jobs
-- Both using pnpm (not Bun)
+- Both using pnpm + Node.js (via tsx)
 - All workspace dependencies resolved

@@ -9,7 +9,9 @@ RUN npm install -g pnpm@10.28.2
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/db/package.json ./packages/db/
 COPY packages/redis/package.json ./packages/redis/
+COPY packages/common/package.json ./packages/common/
 COPY packages/backend-core/package.json ./packages/backend-core/
+COPY packages/queue/package.json ./packages/queue/
 COPY apps/builder-api/package.json ./apps/builder-api/
 
 # Install ALL dependencies (cached layer if files don't change)
@@ -52,4 +54,5 @@ WORKDIR /app/apps/builder-api
 
 EXPOSE 4000
 
-CMD ["node", "src/index.js"]
+# Run the application using pnpm start (which uses tsx)
+CMD ["pnpm", "start"]
