@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { surveyApi, Survey } from "@/api/survey";
+import { surveyApi } from "@/api/survey";
 import { toast } from "sonner";
-import { IconPlus, IconLogout, IconClipboardList, IconChevronRight, IconEdit, IconTrash } from "@tabler/icons-react";
-import NewSurveyModal from "@/components/SurveyModal";
+import { IconPlus, IconClipboardList, IconEdit, IconTrash } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "motion/react";
+import { Survey } from "@surveychamp/types";
 
 export default function Dashboard() {
     const router = useRouter();

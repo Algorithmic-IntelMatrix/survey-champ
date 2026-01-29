@@ -2,6 +2,16 @@ import type { NextFunction, Request, Response } from "express";
 import { verify, type JwtPayload } from "jsonwebtoken";
 import { SYSTEM_CONFIG } from "../config";
 
+// Augment Express Request type
+declare global {
+    namespace Express {
+        interface Request {
+            user?: string;
+            email?: string;
+        }
+    }
+}
+
 export const authenticate = (req : Request, res : Response, next : NextFunction) => {
     try {
         const {authorization} = req.headers;

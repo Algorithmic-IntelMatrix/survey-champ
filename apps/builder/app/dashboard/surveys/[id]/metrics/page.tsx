@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { surveyApi, Survey } from "@/api/survey";
+import { surveyApi } from "@/api/survey";
+import { Survey } from "@surveychamp/types";
 import { surveyResponseApi } from "@/api/surveyResponse";
 import { surveyWorkflowApi } from "@/api/surveyWorkflow";
 import { toast } from "sonner";
