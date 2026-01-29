@@ -1,0 +1,19 @@
+[build]
+  # Base directory for monorepo
+  base = "apps/runner"
+  
+  # Build command using Bun
+  command = "cd ../.. && curl -fsSL https://bun.sh/install | bash && export PATH=\"$HOME/.bun/bin:$PATH\" && bun install && cd apps/runner && bun run build"
+  
+  # Publish directory
+  publish = ".next"
+
+[build.environment]
+  # Force Bun usage
+  NODE_VERSION = "22"
+  NPM_FLAGS = "--legacy-peer-deps"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
