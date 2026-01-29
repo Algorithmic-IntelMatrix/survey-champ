@@ -1,4 +1,8 @@
 name = "surveychamp-runner"
 compatibility_date = "2024-09-23"
+compatibility_flags = [ "nodejs_compat" ]
 pages_build_output_dir = ".vercel/output/static"
 
+[vars]
+# You can also move your NEXT_PUBLIC vars here if you prefer
+NEXT_PUBLIC_API_URL = "https://api.algorithmicintelmatrix.com/api"  
