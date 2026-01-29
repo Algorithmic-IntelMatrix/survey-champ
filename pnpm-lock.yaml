@@ -167,6 +167,9 @@ importers:
 
   apps/runner:
     dependencies:
+      '@radix-ui/react-label':
+        specifier: ^2.1.8
+        version: 2.1.8(@types/react-dom@19.2.3(@types/react@19.2.10))(@types/react@19.2.10)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@surveychamp/common':
         specifier: workspace:*
         version: link:../../packages/common
