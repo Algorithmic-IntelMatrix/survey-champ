@@ -23,9 +23,21 @@ DOCKER_HUB_DEPLOYMENT.md
 
 apps/builder/.next/
 apps/runner/.next/
+apps/builder/node_modules/
+apps/runner/node_modules/
 
+
+apps/worker/node_modules/   
 apps/builder-api/node_modules/
 apps/runner-api/node_modules/
+
+
+
+packages/backend-core/node_modules/   
+packages/common/node_modules/
+packages/db/node_modules/   
+packages/queue/node_modules/   
+packages/redis/node_modules/   
 
 # production
 /build

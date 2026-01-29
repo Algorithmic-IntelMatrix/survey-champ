@@ -3,6 +3,10 @@
     "version": "0.1.0",
     "type": "module",
     "main": "./src/DagReader.ts",
+    "exports": {
+        ".": "./src/DagReader.ts",
+        "./src/*": "./src/*"
+    },
     "dependencies": {},
     "private": true
 }
