@@ -1,3 +1,22 @@
+FROM node:20-alpine AS deps
+
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm@10.28.2
+
+# Copy only dependency files first (better caching)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/db/package.json ./packages/db/
+COPY packages/redis/package.json ./packages/redis/
+COPY packages/backend-core/package.json ./packages/backend-core/
+COPY packages/queue/package.json ./packages/queue/
+COPY apps/worker/package.json ./apps/worker/
+
+# Install ALL dependencies (cached layer if files don't change)
+RUN pnpm install --frozen-lockfile
+
+# Builder stage - copy source and generate Prisma
 FROM node:20-alpine AS builder
 
 WORKDIR /app
@@ -5,21 +24,13 @@ WORKDIR /app
 # Install pnpm
 RUN npm install -g pnpm@10.28.2
 
-# Copy workspace configuration
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-
-# Copy all package files for workspace resolution
-COPY packages/db/package.json ./packages/db/
-COPY packages/redis/package.json ./packages/redis/
-COPY packages/backend-core/package.json ./packages/backend-core/
-COPY apps/worker/package.json ./apps/worker/
+# Copy installed dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
 
 # Copy source files
 COPY packages/ ./packages/
 COPY apps/worker/ ./apps/worker/
-
-# Install dependencies
-RUN pnpm install --frozen-lockfile
 
 # Generate Prisma Client
 WORKDIR /app/packages/db
@@ -27,7 +38,7 @@ ARG DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholde
 ENV DATABASE_URL=${DATABASE_URL}
 RUN pnpm run db:generate
 
-# Production stage
+# Production stage - minimal image
 FROM node:20-alpine
 
 WORKDIR /app
@@ -35,7 +46,7 @@ WORKDIR /app
 # Install pnpm
 RUN npm install -g pnpm@10.28.2
 
-# Copy from builder
+# Copy everything from builder
 COPY --from=builder /app ./
 
 WORKDIR /app/apps/worker

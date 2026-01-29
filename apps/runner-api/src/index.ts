@@ -8,7 +8,7 @@ import type { Env } from "./env";
 import responseRoutes from "./routes/response.route";
 import workflowRoutes from "./routes/workflow.route";
 
-const app = new Hono<{ Bindings: Env }>().basePath("/api");
+const app = new Hono<{ Bindings: Env }>();
 
 // Middleware
 app.use("*", logger());
@@ -24,20 +24,30 @@ app.use("*", cors({
   credentials: true,
 }));
 
+// Root routes (for health checks and bare domain)
+app.get("/", (c) => {
+  return c.json({ service: "runner-api", status: "ok", version: "1.0.0" });
+});
+
+app.get("/health", (c) => {
+  return c.json({ status: "ok" });
+});
 
 const CACHE_TTL = 3600; // 1 hour
 const pendingSurveyLookups = new Map<string, Promise<any>>();
 
-app.get("/", (c) => {
-  return c.json({ service: "runner-api", status: "ok" });
+// API Routes
+const api = new Hono<{ Bindings: Env }>();
+
+api.get("/", (c) => {
+  return c.json({ service: "runner-api", status: "ok", path: "/api" });
 });
 
-// Routes
-app.route("/responses", responseRoutes);
-app.route("/workflows", workflowRoutes);
+api.route("/responses", responseRoutes);
+api.route("/workflows", workflowRoutes);
 
 // Get Survey Endpoint (Cache-Aside with Coalescing)
-app.get("/survey/:id", async (c) => {
+api.get("/survey/:id", async (c) => {
   try {
     const { id } = c.req.param();
     const env = c.env;
@@ -104,7 +114,7 @@ app.get("/survey/:id", async (c) => {
 
 
 // Submit Response Endpoint (Producer)
-app.post("/submit", async (c) => {
+api.post("/submit", async (c) => {
   try {
     const env = c.env;
     const redis = new Redis({
@@ -146,6 +156,8 @@ app.post("/submit", async (c) => {
     return c.json({ error: "Failed to submit response" }, 500);
   }
 });
+
+app.route("/api", api);
 
 // Cloudflare Workers export
 export default app;
