@@ -1,0 +1,110 @@
+# Cloudflare Pages Configuration Reference - Runner App
+# 
+# NOTE: Cloudflare Pages doesn't use TOML files for configuration.
+# This file serves as a REFERENCE for the settings you should configure
+# in the Cloudflare Dashboard when creating the Pages project.
+#
+# Project Setup: https://dash.cloudflare.com > Workers & Pages > Create Application > Pages
+
+# ============================================================================
+# PROJECT INFORMATION
+# ============================================================================
+# Project Name: surveychamp-runner
+# Description: Survey taking and submission UI
+# Production Branch: main (or master)
+
+# ============================================================================
+# BUILD CONFIGURATION
+# ============================================================================
+# Framework Preset: Next.js
+# Build Command:
+build_command = "bun install && bun run --filter @surveychamp/runner build"
+
+# Build Output Directory (relative to root):
+build_output_directory = "apps/runner/out"
+
+# Root Directory:
+root_directory = "/" # Monorepo root - IMPORTANT!
+
+# NOTE: Cloudflare Pages has automatic Next.js support. When you deploy
+# a Next.js app, Cloudflare automatically handles:
+# - Server-side rendering at the edge
+# - API routes (if any)
+# - Dynamic routes
+# - ISR (Incremental Static Regeneration)
+
+# ============================================================================
+# BUILD WATCH PATHS
+# ============================================================================
+# Configure in: Project Settings > Builds & deployments > Build watch paths
+# These paths determine which file changes trigger a build for THIS project
+#
+# Include paths (trigger build when these change):
+# - apps/runner/**
+# - packages/**
+# - package.json
+# - bun.lock
+# - tsconfig.json
+#
+# This ensures:
+# ✅ Changes to runner app trigger runner builds
+# ✅ Changes to shared packages trigger runner builds
+# ❌ Changes to builder app DON'T trigger runner builds
+# ❌ Changes to other apps DON'T trigger runner builds
+
+# ============================================================================
+# ENVIRONMENT VARIABLES
+# ============================================================================
+# Configure in: Project Settings > Environment variables
+#
+# Production Environment:
+# NEXT_PUBLIC_API_URL = "https://runner-api.algorithmicintelmatrix.com/api"
+# NEXT_PUBLIC_APP_URL = "https://builder.algorithmicintelmatrix.com"
+# NEXT_PUBLIC_SURVEY_URL = "https://survey.algorithmicintelmatrix.com"
+# NODE_VERSION = "20.18.2"
+
+# Preview Environment (optional):
+# NEXT_PUBLIC_API_URL = "https://runner-api-staging.algorithmicintelmatrix.com/api"
+# NEXT_PUBLIC_APP_URL = "https://builder-staging.algorithmicintelmatrix.com"
+# NEXT_PUBLIC_SURVEY_URL = (auto-generated preview URL)
+# NODE_VERSION = "20.18.2"
+
+# ============================================================================
+# CUSTOM DOMAIN
+# ============================================================================
+# Configure in: Project Settings > Custom domains
+# Production Domain: survey.algorithmicintelmatrix.com
+#
+# Cloudflare will automatically:
+# - Create DNS records
+# - Provision SSL certificate
+# - Enable HTTP/2 and HTTP/3
+
+# ============================================================================
+# ADVANCED BUILD SETTINGS
+# ============================================================================
+# Build system: v2 (required for monorepo support)
+# Node.js version: 20.18.2
+# Build timeout: 20 minutes (default)
+# Build watch paths: Enabled (see above)
+# Compatibility flags: nodejs_compat (if using Node.js APIs)
+
+# ============================================================================
+# DEPLOYMENT SETTINGS
+# ============================================================================
+# Branch deployments: Enabled
+# Production branch: main
+# Preview deployments: All branches
+# Build caching: Enabled
+# Automatic deployments: Enabled (on git push)
+
+# ============================================================================
+# GITHUB INTEGRATION
+# ============================================================================
+# When connected to GitHub:
+# - Automatic deployments on push to production branch
+# - Preview deployments for pull requests
+# - Deployment status checks on PRs
+# - Multiple projects will show separate status checks
+
+

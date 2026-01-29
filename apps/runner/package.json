@@ -5,9 +5,9 @@
     "scripts": {
         "dev": "next dev -p 3001",
         "build": "next build",
-        "pages:build": "npx @cloudflare/next-on-pages",
+        "pages:build": "bunx @cloudflare/next-on-pages",
         "pages:deploy": "bun run pages:build && wrangler pages deploy .vercel/output/static",
-        "pages:dev": "npx @cloudflare/next-on-pages --watch",
+        "pages:dev": "bunx @cloudflare/next-on-pages --watch",
         "start": "next start",
         "lint": "next lint"
     },
