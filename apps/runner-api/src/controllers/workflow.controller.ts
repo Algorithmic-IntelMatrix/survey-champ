@@ -4,9 +4,9 @@ import { Redis } from "@upstash/redis/cloudflare";
 // In-memory map to handle request coalescing (thundering herd protection)
 const pendingWorkflowLookups = new Map<string, Promise<any>>();
 
-const getRedis = () => new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || "",
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || ""
+const getRedis = (env: any) => new Redis({
+  url: env.UPSTASH_REDIS_REST_URL || "",
+  token: env.UPSTASH_REDIS_REST_TOKEN || ""
 });
 
 export const surveyWorkflowController = {
@@ -17,7 +17,8 @@ export const surveyWorkflowController = {
         return c.json({ message: "Survey ID is required" }, 400);
       }
 
-      const redis = getRedis();
+      const env = (c as any).env;
+      const redis = getRedis(env);
       const cacheKey = `workflow_latest:${surveyId}`;
 
       // 1. Try Cache
@@ -36,10 +37,11 @@ export const surveyWorkflowController = {
       // 3. Fallback to builder-api (edge-compatible, no DB dependency)
       const lookupPromise = (async () => {
         try {
+          const env = (c as any).env;
+          const url = `${env.BUILDER_API_URL}/api/workflows/${surveyId}/latest`;
           console.log(`Cache Miss: Fetching workflow for ${surveyId} from builder-api`);
           
-          const env = (c as any).env;
-          const response = await fetch(`${env.BUILDER_API_URL}/api/workflows/survey/${surveyId}/latest`, {
+          const response = await fetch(url, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
           });

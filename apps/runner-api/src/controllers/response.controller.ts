@@ -1,3 +1,8 @@
+import { v4 as uuidv4 } from 'uuid';
+import type { Context } from "hono";
+import { getSignedCookie, setSignedCookie } from 'hono/cookie';
+import { Redis } from "@upstash/redis/cloudflare";
+
 // Edge-compatible enums (copied from @surveychamp/db)
 enum ResponseStatus {
   IN_PROGRESS = "IN_PROGRESS",
@@ -12,28 +17,19 @@ enum Mode {
   TEST = "TEST"
 }
 
-import { v4 as uuidv4 } from 'uuid';
-import type { Context } from "hono";
-import { getSignedCookie, setSignedCookie } from 'hono/cookie';
-import { Redis } from "@upstash/redis/cloudflare";
-
-const COOKIE_SECRET = process.env.JWT_SECRET || "survey_champ_secret";
-
 // Helper to get Redis client
-const getRedis = () => new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || "",
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || ""
+const getRedis = (env: any) => new Redis({
+  url: env.UPSTASH_REDIS_REST_URL || "",
+  token: env.UPSTASH_REDIS_REST_TOKEN || ""
 });
 
 export const surveyResponseController = {
     getMetricsBySurveyId: async (c: Context) => {
         const { surveyId } = c.req.param() as { surveyId: string };
+        const env = (c as any).env;
         try {
             const cacheKey = `metrics:${surveyId}`;
-            const redis = new Redis({
-              url: process.env.UPSTASH_REDIS_REST_URL || "",
-              token: process.env.UPSTASH_REDIS_REST_TOKEN || ""
-            });
+            const redis = getRedis(env);
             const cached = await redis.get(cacheKey);
             if (cached) return c.json({ data: typeof cached === 'string' ? JSON.parse(cached) : cached });
             
@@ -45,9 +41,10 @@ export const surveyResponseController = {
 
     getResponsesBySurveyId: async (c: Context) => {
         const { surveyId } = c.req.param() as { surveyId: string };
+        const env = (c as any).env;
         try {
             const cacheKey = `responses:${surveyId}`;
-            const cached = await getRedis().get(cacheKey);
+            const cached = await getRedis(env).get(cacheKey);
             if (cached) return c.json({ data: typeof cached === 'string' ? JSON.parse(cached) : cached });
             
             return c.json({ data: [] });
@@ -57,6 +54,8 @@ export const surveyResponseController = {
     },
 
     startResponse: async (c: Context) => {
+        const env = (c as any).env;
+        const cookieSecret = env.JWT_SECRET || "survey_champ_secret";
         try {
             const { id, surveyId, mode, respondentId } = await c.req.json();
             if (!surveyId) return c.json({ error: "surveyId is required" }, 400);
@@ -65,7 +64,7 @@ export const surveyResponseController = {
             const currentMode = mode || Mode.TEST;
 
             // Push "start" event and store session in a single pipeline
-            await getRedis().pipeline()
+            await getRedis(env).pipeline()
                 .lpush("survey-submissions-buffer", JSON.stringify({
                     name: "start-response",
                     data: {
@@ -81,7 +80,7 @@ export const surveyResponseController = {
                 .exec();
 
             // Store stateless session in a signed cookie (removes Redis lookups for future answers)
-            await setSignedCookie(c, `sess_${responseId}`, JSON.stringify({ surveyId, mode: currentMode }), COOKIE_SECRET, {
+            await setSignedCookie(c, `sess_${responseId}`, JSON.stringify({ surveyId, mode: currentMode }), cookieSecret, {
                 path: '/',
                 httpOnly: true,
                 secure: true,
@@ -104,6 +103,8 @@ export const surveyResponseController = {
     },
 
     updateResponse: async (c: Context) => {
+        const env = (c as any).env;
+        const cookieSecret = env.JWT_SECRET || "survey_champ_secret";
         try {
             const { id } = c.req.param() as { id: string };
             const { response: responseJson, status, respondentId, outcome, redirectUrl: customRedirectUrl } = await c.req.json();
@@ -111,7 +112,7 @@ export const surveyResponseController = {
             if (!id) return c.json({ error: "Response ID is required" }, 400);
 
             // 1. Try Stateless Cookie first (Fast, 0 commands)
-            let sessionData = await getSignedCookie(c, COOKIE_SECRET, `sess_${id}`);
+            let sessionData = await getSignedCookie(c, cookieSecret, `sess_${id}`);
             let surveyId, mode;
 
             if (sessionData) {
@@ -120,14 +121,14 @@ export const surveyResponseController = {
                 mode = parsed.mode;
             } else {
                 // 2. Fallback to Redis (1 command)
-                const redisSession = await getRedis().get(`session:${id}`);
+                const redisSession = await getRedis(env).get(`session:${id}`);
                 const parsed = redisSession ? (typeof redisSession === 'string' ? JSON.parse(redisSession) : redisSession) : { surveyId: null, mode: Mode.TEST };
                 surveyId = parsed.surveyId;
                 mode = parsed.mode;
             }
 
             // Queue the update (1 command)
-            await getRedis().lpush("survey-submissions-buffer", JSON.stringify({
+            await getRedis(env).lpush("survey-submissions-buffer", JSON.stringify({
                 name: "update-response",
                 data: {
                     id,
@@ -145,7 +146,7 @@ export const surveyResponseController = {
             let finalRedirectUrl = customRedirectUrl;
             
             if (!finalRedirectUrl && status && status !== ResponseStatus.IN_PROGRESS && surveyId) {
-                const surveyCache = await getRedis().get(`survey:${surveyId}`);
+                const surveyCache = await getRedis(env).get(`survey:${surveyId}`);
                 if (surveyCache) {
                     const survey = typeof surveyCache === 'string' ? JSON.parse(surveyCache) : surveyCache;
                     if (status === ResponseStatus.DROPPED) finalRedirectUrl = survey.redirectUrl;
@@ -172,11 +173,13 @@ export const surveyResponseController = {
     },
 
     heartbeat: async (c: Context) => {
+        const env = (c as any).env;
+        const cookieSecret = env.JWT_SECRET || "survey_champ_secret";
         try {
             const { id } = c.req.param() as { id: string };
             
             // Try cookie first
-            let sessionData = await getSignedCookie(c, COOKIE_SECRET, `sess_${id}`);
+            let sessionData = await getSignedCookie(c, cookieSecret, `sess_${id}`);
             let surveyId, mode;
 
             if (sessionData) {
@@ -184,13 +187,13 @@ export const surveyResponseController = {
                 surveyId = parsed.surveyId;
                 mode = parsed.mode;
             } else {
-                const redisSession = await getRedis().get(`session:${id}`);
+                const redisSession = await getRedis(env).get(`session:${id}`);
                 const parsed = redisSession ? (typeof redisSession === 'string' ? JSON.parse(redisSession) : redisSession) : { surveyId: null, mode: Mode.TEST };
                 surveyId = parsed.surveyId;
                 mode = parsed.mode;
             }
 
-            await getRedis().lpush("survey-submissions-buffer", JSON.stringify({
+            await getRedis(env).lpush("survey-submissions-buffer", JSON.stringify({
                 name: "heartbeat",
                 data: { id, surveyId, mode, timestamp: new Date().toISOString() }
             }));

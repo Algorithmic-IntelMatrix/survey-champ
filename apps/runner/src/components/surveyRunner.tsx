@@ -93,7 +93,7 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
 
         // Start Response Session
         if (id) {
-            const pid = searchParams.get('PID') || searchParams.get('pid');
+            const pid = searchParams.get('ID') || searchParams.get('id');
             const respondentId = pid || (Math.random().toString(36).substring(2) + Date.now().toString(36));
 
             surveyResponseApi.startResponse({

@@ -4,9 +4,11 @@ import { authenticate } from "@surveychamp/common";
 
 export const surveyWorkflowRouter = Router();
 
+// Public route for Runner API
+surveyWorkflowRouter.get("/:surveyId/latest", surveyWorkflowController.getLatestWorkflow);
+
 surveyWorkflowRouter.use(authenticate);
 
-surveyWorkflowRouter.get("/:surveyId/latest", surveyWorkflowController.getLatestWorkflow);
 surveyWorkflowRouter.post("/", surveyWorkflowController.createWorkflow);
 surveyWorkflowRouter.get("/:surveyId", surveyWorkflowController.getWorkflows);
 surveyWorkflowRouter.patch("/:id", surveyWorkflowController.updateWorkflow);

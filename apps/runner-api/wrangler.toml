@@ -3,6 +3,9 @@ main = "src/index.ts"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
+[dev]
+port = 4001
+
 # Non-sensitive variables (embedded in worker)
 [vars]
 APP_URL = "https://builder.algorithmicintelmatrix.com"
