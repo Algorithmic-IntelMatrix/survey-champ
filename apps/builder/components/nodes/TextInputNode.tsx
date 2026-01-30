@@ -28,9 +28,8 @@ const TextInputNode = (props: NodeProps<any>) => {
         >
             <div className="space-y-3">
                 <div className="space-y-1">
-                    <label className="text-sm font-medium text-foreground flex items-center gap-1">
+                    <label className="text-sm font-medium text-foreground">
                         {label || "Text Question"}
-                        {required && <span className="text-destructive">*</span>}
                     </label>
                     {description && (
                         <p className="text-xs text-muted-foreground">{description}</p>

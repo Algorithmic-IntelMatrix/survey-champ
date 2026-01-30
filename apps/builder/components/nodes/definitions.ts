@@ -38,7 +38,6 @@ export const CATEGORY_CONFIG: Record<NodeCategory, { label: string, icon: React.
 const commonProperties: PropertyField[] = [
     { name: 'label', label: 'Field Label', type: 'text', placeholder: 'e.g., What is your name?', defaultValue: 'New Question' },
     { name: 'description', label: 'Description', type: 'textarea', placeholder: 'Helper text for the user', defaultValue: '' },
-    { name: 'required', label: 'Required', type: 'switch', defaultValue: false },
     { name: 'condition', label: 'Logic Applied To This Node', type: 'condition', defaultValue: { logicType: 'AND', rules: [] }, helperText: 'Define when this node should be shown (Skip Logic)' },
 ];
 
@@ -146,7 +145,6 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
             { name: 'label', label: 'Title', type: 'text', defaultValue: 'Terms of Service' },
             { name: 'description', label: 'Terms Text', type: 'textarea', defaultValue: 'I agree to the terms and conditions...' },
             { name: 'checkboxLabel', label: 'Checkbox Label', type: 'text', defaultValue: 'I agree' },
-            { name: 'required', label: 'Required', type: 'switch', defaultValue: true }
         ]
     },
     { 
@@ -186,6 +184,7 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
         category: 'choice',
         properties: [
             ...commonProperties,
+            { name: 'items', label: 'Questions/Items', type: 'options', defaultValue: [{ label: 'Question 1', value: 'q1' }] },
             { name: 'maxRating', label: 'Max Stars', type: 'number', defaultValue: 5 }
         ]
     },

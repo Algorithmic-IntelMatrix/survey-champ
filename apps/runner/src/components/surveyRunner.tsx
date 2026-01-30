@@ -180,7 +180,15 @@ export const SurveyRunner = ({ id, mode }: { id: string, mode?: string }) => {
                     return opt ? opt.label : val;
                 }).join(" → ");
             } else if (currentNode.type === 'rating') {
-                displayValue = `${userValue} Stars`;
+                if (typeof userValue === 'object' && userValue !== null) {
+                    const items = currentNode.data?.items || [];
+                    displayValue = items.map((item: any) => {
+                        const val = userValue[item.value] || 0;
+                        return `${item.label}: ${val} Stars`;
+                    }).join(" | ");
+                } else {
+                    displayValue = `${userValue} Stars`;
+                }
             }
 
             // Zip Code Validation

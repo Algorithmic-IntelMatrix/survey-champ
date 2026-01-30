@@ -4,8 +4,9 @@ import BaseNode from './BaseNode';
 import { IconStar } from '@tabler/icons-react';
 
 const RatingNode = (props: NodeProps<any>) => {
-    const { label, description, required, maxRating } = props.data;
+    const { label, description, maxRating, items } = props.data;
     const max = maxRating || 5;
+    const ratingItems = items || (label ? [{ label: label, value: 'q1' }] : []);
 
     return (
         <BaseNode
@@ -17,19 +18,29 @@ const RatingNode = (props: NodeProps<any>) => {
         >
             <div className="space-y-3">
                 <div className="space-y-1">
-                    <label className="text-sm font-medium text-foreground flex items-center gap-1">
-                        {label || "Rating Question"}
-                        {required && <span className="text-destructive">*</span>}
-                    </label>
+                    <p className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                        {label || "Rating Matrix"}
+                    </p>
                     {description && (
-                        <p className="text-xs text-muted-foreground">{description}</p>
+                        <p className="text-[10px] text-muted-foreground italic truncate">{description}</p>
                     )}
                 </div>
 
-                <div className="flex gap-1 justify-center py-2">
-                    {Array.from({ length: max }).map((_, i) => (
-                        <IconStar key={i} size={24} className="text-muted-foreground/30 hover:text-yellow-400 cursor-pointer transition-colors" />
-                    ))}
+                <div className="space-y-2 border-t border-border/50 pt-2">
+                    {ratingItems.length > 0 ? (
+                        ratingItems.map((item: any, idx: number) => (
+                            <div key={idx} className="space-y-1">
+                                <p className="text-[10px] font-medium text-foreground truncate">{item.label}</p>
+                                <div className="flex gap-0.5">
+                                    {Array.from({ length: max }).map((_, i) => (
+                                        <IconStar key={i} size={12} className="text-muted-foreground/30" />
+                                    ))}
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-[10px] text-muted-foreground italic text-center py-2">Add items in properties</p>
+                    )}
                 </div>
             </div>
         </BaseNode>
