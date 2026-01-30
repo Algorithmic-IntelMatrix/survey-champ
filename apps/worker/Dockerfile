@@ -36,7 +36,9 @@ COPY apps/worker/ ./apps/worker/
 # Generate Prisma Client
 WORKDIR /app/packages/db
 ARG DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder?schema=public"
+ARG INTERNAL_API_SECRET=""
 ENV DATABASE_URL=${DATABASE_URL}
+ENV INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
 RUN pnpm run db:generate
 
 # Production stage - minimal image
