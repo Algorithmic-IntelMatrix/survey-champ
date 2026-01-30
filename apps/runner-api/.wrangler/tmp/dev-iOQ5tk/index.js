@@ -28008,6 +28008,7 @@ var surveyResponseController = {
       }
       if (finalRedirectUrl) {
         finalRedirectUrl = finalRedirectUrl.replace(/\[%%PID%%\]/gi, id).replace(/\[%%transactionid%%\]/gi, id);
+        finalRedirectUrl = finalRedirectUrl.replace(/([?&]pid=)(?=&|$)/gi, `$1${id}`).replace(/([?&]transactionid=)(?=&|$)/gi, `$1${id}`);
       }
       return c.json({
         success: true,

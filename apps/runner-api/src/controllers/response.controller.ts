@@ -156,9 +156,16 @@ export const surveyResponseController = {
             }
 
             if (finalRedirectUrl) {
+                // 1. Handle Placeholders
                 finalRedirectUrl = finalRedirectUrl
                     .replace(/\[%%PID%%\]/gi, id)
                     .replace(/\[%%transactionid%%\]/gi, id);
+
+                // 2. Handle common empty query params (pid= or transactionid=)
+                // This handles cases like ?pid= or &transactionid= followed by nothing or another &
+                finalRedirectUrl = finalRedirectUrl
+                    .replace(/([?&]pid=)(?=&|$)/gi, `$1${id}`)
+                    .replace(/([?&]transactionid=)(?=&|$)/gi, `$1${id}`);
             }
 
             return c.json({ 
