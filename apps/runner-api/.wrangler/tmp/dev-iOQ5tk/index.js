@@ -28085,12 +28085,12 @@ var surveyWorkflowController = {
       const cacheKey = `workflow_latest:${surveyId}`;
       const cached2 = await redis.get(cacheKey);
       if (cached2) {
-        return c.json({ data: typeof cached2 === "string" ? JSON.parse(cached2) : cached2 });
+        return c.json(typeof cached2 === "string" ? JSON.parse(cached2) : cached2);
       }
       if (pendingWorkflowLookups.has(surveyId)) {
         console.log(`Coalescing request for survey: ${surveyId}`);
         const workflow2 = await pendingWorkflowLookups.get(surveyId);
-        return c.json({ data: workflow2 });
+        return c.json(workflow2);
       }
       const lookupPromise = (async () => {
         try {
@@ -28121,7 +28121,7 @@ var surveyWorkflowController = {
       if (!workflow) {
         return c.json({ data: null, message: "No workflow found for this survey" }, 404);
       }
-      return c.json({ data: workflow });
+      return c.json(workflow);
     } catch (error50) {
       console.error(error50);
       return c.json({ message: "Internal Server Error" }, 500);

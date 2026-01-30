@@ -24,14 +24,14 @@ export const surveyWorkflowController = {
       // 1. Try Cache
       const cached = await redis.get(cacheKey);
       if (cached) {
-        return c.json({ data: typeof cached === 'string' ? JSON.parse(cached) : cached });
+        return c.json(typeof cached === 'string' ? JSON.parse(cached) : cached);
       }
 
       // 2. Request Coalescing
       if (pendingWorkflowLookups.has(surveyId)) {
         console.log(`Coalescing request for survey: ${surveyId}`);
         const workflow = await pendingWorkflowLookups.get(surveyId);
-        return c.json({ data: workflow });
+        return c.json(workflow);
       }
 
       // 3. Fallback to builder-api (edge-compatible, no DB dependency)
@@ -71,7 +71,7 @@ export const surveyWorkflowController = {
         return c.json({ data: null, message: "No workflow found for this survey" }, 404);
       }
 
-      return c.json({ data: workflow });
+      return c.json(workflow);
     } catch (error) {
       console.error(error);
       return c.json({ message: "Internal Server Error" }, 500);
