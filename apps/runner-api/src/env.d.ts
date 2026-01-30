@@ -13,6 +13,8 @@ export interface Env {
   AWS_SECRET_ACCESS_KEY?: string;
   AWS_BUCKET_NAME?: string;
 
+
+  INTERNAL_API_SECRET: string;
   // Database access (via HTTP to builder-api)
   BUILDER_API_URL: string;
 }

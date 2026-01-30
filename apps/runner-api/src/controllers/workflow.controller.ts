@@ -43,7 +43,10 @@ export const surveyWorkflowController = {
           
           const response = await fetch(url, {
             method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-Internal-Secret': env.INTERNAL_API_SECRET
+            }
           });
 
           if (!response.ok) {

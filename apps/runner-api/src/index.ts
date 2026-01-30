@@ -80,6 +80,7 @@ api.get("/survey/:id", async (c) => {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
+            'X-Internal-Secret': env.INTERNAL_API_SECRET,
           },
         });
 

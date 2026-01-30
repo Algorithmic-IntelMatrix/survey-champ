@@ -11,6 +11,7 @@ deployment-guide.md
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+.wrangler
 
 # testing
 /coverage

@@ -27568,7 +27568,8 @@ init_performance2();
 var SYSTEM_CONFIG = {
   JWT_SECRET: process.env.JWT_SECRET || "default_secret",
   APP_URL: process.env.APP_URL || "http://localhost:3000",
-  SURVEY_URL: process.env.SURVEY_URL || "http://localhost:3001"
+  SURVEY_URL: process.env.SURVEY_URL || "http://localhost:3001",
+  INTERNAL_API_SECRET: process.env.INTERNAL_API_SECRET || "internal_secret_key"
 };
 
 // ../../packages/common/src/middleware/authenticate.ts
@@ -28097,7 +28098,10 @@ var surveyWorkflowController = {
           console.log(`Cache Miss: Fetching workflow for ${surveyId} from builder-api`);
           const response = await fetch(url2, {
             method: "GET",
-            headers: { "Content-Type": "application/json" }
+            headers: {
+              "Content-Type": "application/json",
+              "X-Internal-Secret": env3.INTERNAL_API_SECRET
+            }
           });
           if (!response.ok) {
             throw new Error(`Failed to fetch workflow: ${response.statusText}`);
@@ -28180,7 +28184,8 @@ api.get("/survey/:id", async (c) => {
         const response = await fetch(`${env2.BUILDER_API_URL}/api/surveys/${id}/public`, {
           method: "GET",
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "X-Internal-Secret": env2.INTERNAL_API_SECRET
           }
         });
         if (!response.ok) {

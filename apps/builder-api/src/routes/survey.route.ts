@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { surveyController } from "../controllers/survey.controller";
 import { authenticate } from "@surveychamp/common";
+import { internalOrUserAuth } from "../middleware/internalAuth.middleware";
+import { surveyQuotaController } from "../controllers/surveyQuota.controller";
+
 
 const router = Router();
-
-import { surveyQuotaController } from "../controllers/surveyQuota.controller";
 
 router.post("/", authenticate, surveyController.createSurvey);
 router.get("/", authenticate, surveyController.getSurveys);
@@ -15,8 +16,10 @@ router.post("/:surveyId/quotas", authenticate, surveyQuotaController.createQuota
 router.delete("/quotas/:id", authenticate, surveyQuotaController.deleteQuota);
 router.patch("/quotas/:id", authenticate, surveyQuotaController.toggleQuota);
 
-// Public survey endpoint (no authentication required) - for runner-api
-router.get("/:id/public", surveyController.getPublicSurvey);
+
+
+// Public survey endpoint (for runner-api) - now secured with internal secret
+router.get("/:id/public", internalOrUserAuth, surveyController.getPublicSurvey);
 
 // Generic ID Routes
 router.get("/:id", authenticate, surveyController.getSurvey);
